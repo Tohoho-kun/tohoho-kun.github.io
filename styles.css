@@ -84,7 +84,8 @@ p { color: var(--text-muted); }
     padding-top: 5rem; /* space for fixed nav */
 }
 .container.x-large {
-    max-width: 1400px;
+    max-width: 1800px;
+    width: 98%;
 }
 
 .page-header {
@@ -477,4 +478,132 @@ hr {
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+/* Gauge R&R Specific Styles */
+.grr-layout {
+    grid-template-columns: 320px 1fr; /* Two column layout for GRR */
+}
+
+.grr-main {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    min-width: 0;
+}
+
+.grr-center-col, .grr-right-col {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+@media (min-width: 1300px) {
+    .grr-main {
+        flex-direction: row;
+        align-items: flex-start;
+    }
+    .grr-main > .grr-center-col {
+        flex: 1; /* stretches to take available width */
+        min-width: 0;
+    }
+    .grr-main > .grr-right-col {
+        width: 340px;
+        flex-shrink: 0;
+    }
+}
+
+.grr-table-wrapper {
+    max-height: 500px;
+}
+
+#grr-table th {
+    background: var(--secondary-color);
+    padding: 0.5rem;
+    font-size: 0.8rem;
+}
+
+#grr-table td input {
+    min-width: 60px;
+    font-size: 0.85rem;
+}
+
+.csv-output-area textarea {
+    font-size: 0.8rem;
+    background: rgba(0,0,0,0.02);
+    border-style: dashed;
+}
+
+.improvement-panel {
+    border-top: 4px solid var(--primary-color);
+    background: linear-gradient(135deg, var(--panel-bg) 0%, rgba(59, 130, 246, 0.05) 100%);
+}
+
+.suggest-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.suggest-card h4 {
+    font-size: 0.9rem;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.predicted-val {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-top: 0.5rem;
+}
+
+.predicted-val span {
+    color: var(--accent-actual);
+    font-size: 1.4rem;
+}
+
+/* iOS Style Switch for simulation options */
+.ios-switch {
+    appearance: none;
+    width: 40px;
+    height: 20px;
+    background: #ccc;
+    border-radius: 20px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+.ios-switch:checked {
+    background: var(--primary-color);
+}
+.ios-switch::before {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    transition: left 0.3s;
+}
+.ios-switch:checked::before {
+    left: 22px;
+}
+
+.flex-between {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Hide spin buttons for data tables (both Cpk and GRR) */
+.data-table input[type="number"]::-webkit-outer-spin-button,
+.data-table input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.data-table input[type="number"] {
+    -moz-appearance: textfield;
 }

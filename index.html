@@ -56,14 +56,14 @@
                     </div>
                 </div>
 
-                <!-- Coming Soon Card -->
-                <div class="app-card disabled">
+                <!-- App Card -->
+                <div class="app-card" onclick="window.location.hash='#grr'">
                     <div class="app-card-icon">
-                        <i class="fa-solid fa-screwdriver-wrench"></i>
+                        <i class="fa-solid fa-microscope"></i>
                     </div>
                     <div class="app-card-content">
                         <h3 data-i18n="grr_app_title">ゲージR&R アナライザー</h3>
-                        <p>Coming Soon...</p>
+                        <p data-i18n="grr_app_desc">測定器の分解能や繰り返し性・再現性が工程能力に与える影響を解析するツール。</p>
                     </div>
                 </div>
             </div>
@@ -140,7 +140,7 @@
                     <div class="flex-header compact-header">
                         <h2><i class="fa-solid fa-table"></i> <span data-i18n="data_label">データ</span></h2>
                         <div>
-                            <button id="btn-copy" class="icon-btn small-icon" title="コピー"><i class="fa-regular fa-copy"></i></button>
+                            <button id="btn-copy" class="icon-btn small-icon" title="Excelコピー"><i class="fa-regular fa-copy"></i></button>
                             <button id="btn-clear" class="icon-btn small-icon" title="クリア"><i class="fa-solid fa-eraser"></i></button>
                         </div>
                     </div>
@@ -195,6 +195,144 @@
                             </select>
                         </div>
                         <canvas id="cpk-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+    <template id="view-grr">
+        <div class="container x-large fade-in">
+            <div class="page-header flex-header">
+                <div>
+                    <button class="back-link" onclick="window.location.hash='#home'"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="back_home">ホームへ戻る</span></button>
+                    <h1 data-i18n="grr_title">ゲージR&R アナライザー (MSA)</h1>
+                </div>
+                <p class="warning-text" data-i18n="warning_text">教育目的以外の使用は禁止します。</p>
+            </div>
+
+            <div class="layout-grid grr-layout">
+                <!-- Left: Controls -->
+                <aside class="control-panel panel">
+                    <h2><i class="fa-solid fa-sliders"></i> <span data-i18n="settings">設定</span></h2>
+                    
+                    <div class="control-group">
+                        <label for="grr-usl" data-i18n="usl_label">規格上限 (USL)</label>
+                        <input type="number" id="grr-usl" value="10.10" step="0.01">
+                    </div>
+                    <div class="control-group">
+                        <label for="grr-lsl" data-i18n="lsl_label">規格下限 (LSL)</label>
+                        <input type="number" id="grr-lsl" value="9.90" step="0.01">
+                    </div>
+
+                    <hr>
+                    
+                    <h3><i class="fa-solid fa-microscope"></i> <span data-i18n="inst_settings">測定器仕様</span></h3>
+                    <div class="control-group">
+                        <label for="grr-digits" data-i18n="gen_decimals">小数桁数</label>
+                        <input type="number" id="grr-digits" value="2" min="0" max="6">
+                    </div>
+                    <div class="control-group">
+                        <label for="grr-step" data-i18n="round_unit">丸め単位 (Resolution)</label>
+                        <input type="number" id="grr-step" value="0.01" step="0.001" min="0.0001">
+                    </div>
+
+                    <hr>
+                    
+                    <h3><i class="fa-solid fa-dice"></i> <span data-i18n="gen_settings">シミュレーション生成</span></h3>
+                    <div class="control-group">
+                        <label for="sim-part-mean" data-i18n="mean_label">理論平均 (μ)</label>
+                        <input type="number" id="sim-part-mean" value="10.00" step="0.01">
+                    </div>
+                    <div class="control-group">
+                        <label for="sim-part-std" data-i18n="part_var_label">サンプルのばらつき (σ_part)</label>
+                        <input type="number" id="sim-part-std" value="0.03" step="0.001">
+                    </div>
+                    <div class="control-group">
+                        <label for="sim-error-std" data-i18n="error_var_label">測定誤差 (σ_error)</label>
+                        <input type="number" id="sim-error-std" value="0.005" step="0.001">
+                    </div>
+                    <div class="control-group flex-between">
+                        <label for="sim-out-of-spec" data-i18n="out_of_spec_label">公差外データを生成</label>
+                        <input type="checkbox" id="sim-out-of-spec" class="ios-switch" checked>
+                    </div>
+
+                    <button id="btn-grr-generate" class="btn primary full-width"><i class="fa-solid fa-bolt"></i> <span data-i18n="btn_gen">データ生成</span></button>
+                    <button id="btn-grr-calc" class="btn secondary full-width mt-2"><i class="fa-solid fa-calculator"></i> <span data-i18n="btn_recalc">計算実行</span></button>
+                    <button id="btn-grr-improve" class="btn secondary full-width mt-2"><i class="fa-solid fa-wand-magic-sparkles"></i> <span data-i18n="btn_improve">改善案を表示</span></button>
+                </aside>
+
+                <!-- Right: Data & Analysis -->
+                <div class="main-content grr-main">
+                    
+                    <div class="grr-center-col">
+                        <!-- Center: Data Table -->
+                    <div class="data-panel panel compact">
+                        <div class="flex-header compact-header">
+                            <h2><i class="fa-solid fa-table"></i> <span data-i18n="data_label">データ入力 (10x3x3)</span></h2>
+                            <div class="table-actions">
+                                <button id="btn-grr-copy" class="icon-btn small-icon" title="Excelコピー (標準)"><i class="fa-regular fa-copy"></i></button>
+                                <button id="btn-grr-copy-t" class="icon-btn small-icon" title="縦横入替コピー"><i class="fa-solid fa-retweet"></i></button>
+                                <button id="btn-grr-clear" class="icon-btn small-icon" title="クリア"><i class="fa-solid fa-eraser"></i></button>
+                            </div>
+                        </div>
+                        <div class="table-container tight grr-table-wrapper">
+                            <table class="data-table excel-style" id="grr-table">
+                                <thead>
+                                    <tr>
+                                        <th rowspan="2" data-i18n="part_label">Part</th>
+                                        <th colspan="3" data-i18n="op1_label">Op 1</th>
+                                        <th colspan="3" data-i18n="op2_label">Op 2</th>
+                                        <th colspan="3" data-i18n="op3_label">Op 3</th>
+                                    </tr>
+                                    <tr>
+                                        <th data-i18n="tr1_label">Tr1</th><th data-i18n="tr2_label">Tr2</th><th data-i18n="tr3_label">Tr3</th>
+                                        <th data-i18n="tr1_label">Tr1</th><th data-i18n="tr2_label">Tr2</th><th data-i18n="tr3_label">Tr3</th>
+                                        <th data-i18n="tr1_label">Tr1</th><th data-i18n="tr2_label">Tr2</th><th data-i18n="tr3_label">Tr3</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Rows will be injected by app.js -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="csv-output-area mt-4">
+                            <label for="grr-csv-output" style="font-size: 0.8rem; color: var(--text-muted);">Data Trace (TSV / Excel):</label>
+                            <textarea id="grr-csv-output" rows="4" readonly placeholder="Calculated data will appear here..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="chart-container panel">
+                        <canvas id="grr-chart"></canvas>
+                    </div>
+
+                </div>
+
+                <div class="grr-right-col">
+                    <div class="stats-grid">
+                        <div class="stat-card" id="card-grr-percent">
+                            <div class="stat-title">%GR&R</div>
+                            <div class="stat-value" id="stat-grr-val">--</div>
+                            <div class="stat-sub">Study Var</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-title">Number of Distinct Categories</div>
+                            <div class="stat-value" id="stat-ndc-val">--</div>
+                        </div>
+                    </div>
+
+                    <div id="grr-alerts"></div>
+
+                    <div id="improvement-vessel" class="mt-4"></div>
+
+                    <div class="panel mt-4 fade-in" style="font-size: 0.85rem; background: rgba(0,0,0,0.1); border-left: 4px solid var(--secondary-color);">
+                        <h4 style="margin-bottom: 0.8rem; color: var(--text-color);"><i class="fa-solid fa-square-root-variable"></i> <span data-i18n="formula_title">計算式の定義 (ANOVA法)</span></h4>
+                        <div style="display: grid; grid-template-columns: 1fr; gap: 8px; font-family: monospace;">
+                            <div><strong>%GR&amp;R</strong> = 100 &times; ( &sigma;<sub>GRR</sub> / &sigma;<sub>Total</sub> )</div>
+                            <div><strong>ndc</strong> = 1.41 &times; ( &sigma;<sub>Part</sub> / &sigma;<sub>GRR</sub> )</div>
+                            <div><strong>&sigma;<sub>GRR</sub></strong> = &radic;( &sigma;<sup>2</sup><sub>Repeat</sub> + &sigma;<sup>2</sup><sub>Reprod</sub> )</div>
+                            <div><strong>&sigma;<sup>2</sup><sub>Total</sub></strong> = &sigma;<sup>2</sup><sub>Part</sub> + &sigma;<sup>2</sup><sub>GRR</sub></div>
+                        </div>
                     </div>
                 </div>
             </div>
