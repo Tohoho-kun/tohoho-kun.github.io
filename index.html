@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technical Tools Platform</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand" onclick="window.location.hash='#home'">
+            <i class="fa-solid fa-layer-group"></i> 
+            <span>Tohoho-kun Tech Platform</span>
+        </div>
+        <div class="nav-controls">
+            <select id="lang-select" class="custom-select" style="margin-right: 15px; background: transparent; border: 1px solid var(--panel-border);">
+                <option value="ja">日本語</option>
+                <option value="en">English</option>
+                <option value="es">Español</option>
+            </select>
+            <button id="theme-toggle" class="icon-btn" aria-label="Toggle theme">
+                <i class="fa-solid fa-moon"></i>
+            </button>
+        </div>
+    </nav>
+
+    <main id="app-content">
+        <!-- Views will be injected here by app.js -->
+    </main>
+
+    <!-- Templates -->
+    <template id="view-home">
+        <div class="container fade-in">
+            <header class="page-header">
+                <h1 data-i18n="portal_title">エンジニアリング ツールポータル</h1>
+                <p data-i18n="portal_desc">現場で使える直感的な技術計算シミュレーター</p>
+            </header>
+            
+            <div class="app-grid">
+                <!-- App Card -->
+                <div class="app-card" onclick="window.location.hash='#cpk'">
+                    <div class="app-card-icon">
+                        <i class="fa-solid fa-chart-bell-curve"></i>
+                    </div>
+                    <div class="app-card-content">
+                        <h3 data-i18n="cpk_app_title">プロセス・キャパビリティ (Cpk) シミュレーター</h3>
+                        <p data-i18n="cpk_app_desc">工程能力の直感的な理解とデータの実力値を理論値と重ねて分析・比較できるツール。</p>
+                    </div>
+                </div>
+
+                <!-- Coming Soon Card -->
+                <div class="app-card disabled">
+                    <div class="app-card-icon">
+                        <i class="fa-solid fa-screwdriver-wrench"></i>
+                    </div>
+                    <div class="app-card-content">
+                        <h3 data-i18n="grr_app_title">ゲージR&R アナライザー</h3>
+                        <p>Coming Soon...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="view-cpk">
+        <div class="container x-large fade-in">
+            <div class="page-header flex-header" style="flex-direction: column; align-items: flex-start;">
+                <div>
+                    <button class="back-link" onclick="window.location.hash='#home'"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="back_home">ホームへ戻る</span></button>
+                    <h1 data-i18n="cpk_title">プロセス・キャパビリティ シミュレーター</h1>
+                </div>
+                <p class="warning-text" data-i18n="warning_text">教育目的以外の使用は禁止します。企業でも教育目的であれば可です。生成したシミュレーションデータの悪用はしないでください</p>
+            </div>
+
+            <div class="layout-grid">
+                <!-- Left Sidebar 1: Controls -->
+                <aside class="control-panel panel">
+                    <h2><i class="fa-solid fa-sliders"></i> Control Panel</h2>
+                    
+                    <div class="control-group">
+                        <label for="input-usl" data-i18n="usl_label">規格上限 (USL)</label>
+                        <input type="number" id="input-usl" value="1" step="0.01">
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="input-lsl" data-i18n="lsl_label">規格下限 (LSL)</label>
+                        <input type="number" id="input-lsl" value="-1" step="0.01">
+                    </div>
+
+                    <div class="control-group">
+                        <div class="slider-header">
+                            <label for="input-mean" data-i18n="mean_label">理論平均 (μ)</label>
+                            <input type="number" id="val-mean" class="input-sync" value="0.0" step="0.01">
+                        </div>
+                        <input type="range" id="input-mean" min="-5" max="5" value="0.0" step="0.001">
+                    </div>
+
+                    <div class="control-group">
+                        <div class="slider-header">
+                            <label for="input-std" data-i18n="std_label">理論標準偏差 (σ)</label>
+                            <input type="number" id="val-std" class="input-sync" value="0.33" step="0.01" min="0.001">
+                        </div>
+                        <input type="range" id="input-std" min="0.001" max="5" value="0.33" step="0.001">
+                    </div>
+
+                    <hr>
+                    
+                    <h3><i class="fa-solid fa-database"></i> <span data-i18n="gen_settings">生成設定</span></h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-bottom: 10px;">
+                        <div class="control-group" style="margin-bottom:0;">
+                            <label for="input-n" style="font-size:0.75rem;" data-i18n="gen_n">N数(&le;50)</label>
+                            <input type="number" id="input-n" value="30" min="1" max="50" style="padding:0.2rem;">
+                        </div>
+                        <div class="control-group" style="margin-bottom:0;">
+                            <label for="input-digits" style="font-size:0.75rem;" data-i18n="gen_decimals">小数桁数</label>
+                            <input type="number" id="input-digits" value="2" min="0" max="6" style="padding:0.2rem;">
+                        </div>
+                        <div class="control-group" style="margin-bottom:0;">
+                            <label for="input-step" style="font-size:0.75rem;" data-i18n="gen_step">丸め刻み</label>
+                            <input type="number" id="input-step" value="0.01" step="0.01" min="0" style="padding:0.2rem;">
+                        </div>
+                    </div>
+                    <button id="btn-generate" class="btn primary full-width"><i class="fa-solid fa-bolt"></i> <span data-i18n="btn_gen">ランダム生成</span></button>
+                    <button id="btn-recalc" class="btn secondary full-width mt-2"><i class="fa-solid fa-calculator"></i> <span data-i18n="btn_recalc">特性値再計算</span></button>
+                    
+                    <hr>
+                    <button id="btn-apply-actual" class="btn secondary full-width"><i class="fa-solid fa-upload"></i> <span data-i18n="btn_apply">実力値をスライダーに反映</span></button>
+                </aside>
+
+                <!-- Left Sidebar 2: Data Table -->
+                <div class="data-panel panel compact">
+                    <div class="flex-header compact-header">
+                        <h2><i class="fa-solid fa-table"></i> <span data-i18n="data_label">データ</span></h2>
+                        <div>
+                            <button id="btn-copy" class="icon-btn small-icon" title="コピー"><i class="fa-regular fa-copy"></i></button>
+                            <button id="btn-clear" class="icon-btn small-icon" title="クリア"><i class="fa-solid fa-eraser"></i></button>
+                        </div>
+                    </div>
+                    <div class="table-container tight">
+                        <table class="data-table excel-style" id="data-table">
+                            <thead>
+                                <tr>
+                                    <th>No.</th>
+                                    <th data-i18n="data_val_label">値 (Value)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Rows will be injected by app.js -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Right: Visualization & Data -->
+                <div class="main-content">
+                    
+                    <!-- Stats area -->
+                    <div class="stats-grid">
+                        <div class="stat-card theoretical">
+                            <div class="stat-title" data-i18n="theo_cpk">理論 Cpk</div>
+                            <div class="stat-value" id="stat-theory-cpk">--</div>
+                            <div class="stat-sub">Cp: <span id="stat-theory-cp">--</span></div>
+                        </div>
+                        <div class="stat-card actual">
+                            <div class="stat-title" data-i18n="act_cpk">実力 Cpk</div>
+                            <div class="stat-value" id="stat-actual-cpk">--</div>
+                            <div class="stat-sub">Cp: <span id="stat-actual-cp">--</span></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-title" data-i18n="act_mean">実力平均 (x̄)</div>
+                            <div class="stat-value" id="stat-actual-mean">--</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-title" data-i18n="act_std">実力標準偏差 (s)</div>
+                            <div class="stat-value" id="stat-actual-std">--</div>
+                        </div>
+                    </div>
+
+                    <!-- Chart -->
+                    <div class="chart-container panel">
+                        <div class="chart-controls">
+                            <label for="plot-type-select"><i class="fa-solid fa-chart-pie"></i> <span data-i18n="plot_type">実績値の表示:</span></label>
+                            <select id="plot-type-select" class="custom-select">
+                                <option value="scatter" data-i18n="plot_scatter">散布図 (Scatter)</option>
+                                <option value="line" data-i18n="plot_curve">曲線 (Curve)</option>
+                                <option value="histogram" data-i18n="plot_hist">ヒストグラム (Histogram)</option>
+                            </select>
+                        </div>
+                        <canvas id="cpk-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <script src="app.js"></script>
+</body>
+</html>
