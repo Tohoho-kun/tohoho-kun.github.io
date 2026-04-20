@@ -71,17 +71,17 @@ body::before {
 }
 
 /* Typography */
-h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
-h2 { font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; color: var(--primary-color); }
-h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; }
+h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.4rem; }
+h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.75rem; color: var(--primary-color); }
+h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.4rem; }
 p { color: var(--text-muted); }
 
 /* Layout & Containers */
 .container {
     max-width: 1000px;
     margin: 0 auto;
-    padding: 2rem;
-    padding-top: 5rem; /* space for fixed nav */
+    padding: 1rem 1.5rem;
+    padding-top: 4rem; /* space for fixed nav */
 }
 .container.x-large {
     max-width: 1800px;
@@ -89,7 +89,7 @@ p { color: var(--text-muted); }
 }
 
 .page-header {
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
 }
 .flex-header {
     display: flex;
@@ -191,13 +191,13 @@ p { color: var(--text-muted); }
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid var(--panel-border);
     border-radius: 12px;
-    padding: 1.5rem;
+    padding: 1rem;
     box-shadow: var(--panel-shadow);
 }
 
 /* Form Controls */
 .control-group {
-    margin-bottom: 1.25rem;
+    margin-bottom: 0.6rem;
 }
 .control-group label {
     display: block;
@@ -606,4 +606,135 @@ hr {
 }
 .data-table input[type="number"] {
     -moz-appearance: textfield;
+}
+
+/* -----------------------------
+   GD&T Simulator Styles
+------------------------------ */
+.layout-grid.gdt-layout {
+    grid-template-columns: 320px 1fr !important;
+}
+@media (max-width: 900px) {
+    .layout-grid.gdt-layout {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+.gdt-dual-pane {
+    display: flex;
+    gap: 1.25rem;
+    width: 100%;
+    min-height: 480px;
+}
+
+.gdt-pane-3d {
+    flex: 1.2;
+    min-width: 0;
+    min-height: 400px;
+    overflow: hidden;
+}
+
+#gdt-3d-container {
+    width: 100%;
+    height: 100%;
+    min-height: 320px;
+}
+
+.gdt-right-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+#gdt-2d-canvas {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
+    max-width: 350px;
+}
+
+@media (max-width: 1024px) {
+    .gdt-dual-pane {
+        flex-direction: column;
+    }
+    .gdt-pane-3d {
+        min-height: 350px;
+    }
+    .gdt-right-col {
+        min-height: 300px;
+    }
+}
+
+.gdt-pane-3d canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    outline: none;
+    cursor: grab;
+    border-radius: 0 0 12px 12px;
+}
+.gdt-pane-3d canvas:active {
+    cursor: grabbing;
+}
+
+.gdt-controls input[type="number"] {
+    background: rgba(0,0,0,0.2) !important;
+}
+[data-theme="light"] .gdt-controls input[type="number"] {
+    background: #fff !important;
+}
+
+.gdt-mode-btns .btn.small {
+    font-size: 0.75rem;
+    padding: 6px 8px;
+    border: 1px solid var(--border-color);
+    background: rgba(255,255,255,0.05);
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: 6px;
+}
+.gdt-mode-btns .btn.small.active {
+    background: var(--primary-color);
+    color: #fff;
+    border-color: var(--primary-color);
+}
+.gdt-mode-btns .btn.small:hover:not(.active) {
+    background: rgba(255,255,255,0.1);
+}
+
+#gdt-notation-box {
+    border: 1px solid var(--border-color);
+}
+
+/* GD&T Tab Buttons */
+.gdt-tab-btn {
+    transition: all 0.2s ease;
+    opacity: 0.6;
+    background: transparent;
+    border: 1px solid transparent;
+    border-bottom: none;
+    margin-bottom: -1px;
+    color: var(--secondary-color);
+    cursor: pointer;
+    font-weight: bold;
+    padding: 8px 16px;
+    border-radius: 6px 6px 0 0;
+    z-index: 1;
+    font-size: 0.9rem;
+}
+.gdt-tab-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    opacity: 0.9;
+}
+.gdt-tab-btn.active {
+    opacity: 1;
+    background: rgba(6, 182, 212, 0.15);
+    color: #06b6d4;
+    border: 1px solid var(--border-color);
+    border-bottom: 2px solid #06b6d4;
+    border-radius: 6px 6px 0 0;
+    z-index: 2;
 }

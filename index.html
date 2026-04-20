@@ -1,15 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja" data-theme="dark">
 <head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-S3BY083L8K"></script>
-        <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-    
-      gtag('config', 'G-S3BY083L8K');
-    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Technical Tools Platform</title>
@@ -20,6 +11,9 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <!-- Three.js for GD&T (local r128 copies) -->
+    <script src="three.min.js"></script>
+    <script src="OrbitControls.js"></script>
     <!-- Styles -->
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -65,18 +59,28 @@
                     </div>
                 </div>
 
-                <!-- App Card -->
-                <div class="app-card" onclick="window.location.hash='#grr'">
-                    <div class="app-card-icon">
-                        <i class="fa-solid fa-microscope"></i>
+                    <div class="app-card" onclick="window.location.hash='#grr'">
+                        <div class="app-card-icon">
+                            <i class="fa-solid fa-microscope"></i>
+                        </div>
+                        <div class="app-card-content">
+                            <h3 data-i18n="grr_app_title">ゲージR&R アナライザー</h3>
+                            <p data-i18n="grr_app_desc">測定器の分解能や繰り返し性・再現性が工程能力に与える影響を解析するツール。</p>
+                        </div>
                     </div>
-                    <div class="app-card-content">
-                        <h3 data-i18n="grr_app_title">ゲージR&R アナライザー</h3>
-                        <p data-i18n="grr_app_desc">測定器の分解能や繰り返し性・再現性が工程能力に与える影響を解析するツール。</p>
+
+                    <!-- App Card -->
+                    <div class="app-card" onclick="window.location.hash='#gdt-position'">
+                        <div class="app-card-icon">
+                            <i class="fa-solid fa-cube"></i>
+                        </div>
+                        <div class="app-card-content">
+                            <h3 data-i18n="gdt_title">GD&T 位置度シミュレーター</h3>
+                            <p data-i18n="gdt_app_desc">3D空間と2D平面で位置度（Position）の概念を視覚化し、±公差との違いを学ぶ教育ツール。</p>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
     </template>
 
     <template id="view-cpk">
@@ -341,6 +345,156 @@
                             <div><strong>ndc</strong> = 1.41 &times; ( &sigma;<sub>Part</sub> / &sigma;<sub>GRR</sub> )</div>
                             <div><strong>&sigma;<sub>GRR</sub></strong> = &radic;( &sigma;<sup>2</sup><sub>Repeat</sub> + &sigma;<sup>2</sup><sub>Reprod</sub> )</div>
                             <div><strong>&sigma;<sup>2</sup><sub>Total</sub></strong> = &sigma;<sup>2</sup><sub>Part</sub> + &sigma;<sup>2</sup><sub>GRR</sub></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- GD&T Position Simulator Template -->
+    <template id="view-gdt">
+        <div class="container x-large fade-in">
+            <div class="page-header flex-header">
+                <div>
+                    <button class="back-link" onclick="window.location.hash='#home'"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="back_home">ホームへ戻る</span></button>
+                    <h1 data-i18n="gdt_title">GD&T 位置度シミュレーター (3D/2D)</h1>
+                </div>
+                <p class="warning-text" data-i18n="warning_text">教育目的以外の使用は禁止します。</p>
+            </div>
+
+            <div class="layout-grid gdt-layout">
+                <!-- Left: Controls -->
+                <aside class="control-panel panel gdt-controls">
+                    <h2><i class="fa-solid fa-sliders"></i> <span data-i18n="settings">設定</span></h2>
+                    
+                    <div class="control-group">
+                        <label data-i18n="gdt_ted_label">理論的正確な寸法 (TED)</label>
+                        <div class="flex-between">
+                            <span style="font-size:0.8rem; margin-right:4px;">X:</span>
+                            <input type="number" id="gdt-ted-x" value="20.00" step="0.01" style="width:40%;">
+                            <span style="font-size:0.8rem; margin:0 4px;">Y:</span>
+                            <input type="number" id="gdt-ted-y" value="15.00" step="0.01" style="width:40%;">
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label data-i18n="gdt_tol_type_label">公差表示タイプ</label>
+                        <div class="gdt-mode-btns" style="display:flex; gap:4px; margin-bottom:10px;">
+                            <button id="gdt-mode-both" class="btn small active" style="flex:1; font-size:0.75rem; padding:6px 4px;" onclick="setGdtMode('both')">両方</button>
+                            <button id="gdt-mode-pos" class="btn small" style="flex:1; font-size:0.75rem; padding:6px 4px;" onclick="setGdtMode('pos')">⌀ 位置度</button>
+                            <button id="gdt-mode-box" class="btn small" style="flex:1; font-size:0.75rem; padding:6px 4px;" onclick="setGdtMode('box')">± 公差</button>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label for="gdt-tolerance" data-i18n="gdt_tol_label">位置度公差 (T)</label>
+                        <input type="number" id="gdt-tolerance" value="0.50" step="0.01">
+                    </div>
+                    
+                    <hr>
+
+                    <h3><i class="fa-solid fa-crosshairs"></i> <span data-i18n="gdt_actual_meas">実際の測定座標</span></h3>
+                    <div class="control-group">
+                        <div class="flex-between mb-2">
+                            <span style="font-size:0.8rem; margin-right:4px;">X:</span>
+                            <input type="number" id="gdt-actual-x" value="20.20" step="0.01" style="width:40%;">
+                            <span style="font-size:0.8rem; margin:0 4px;">Y:</span>
+                            <input type="number" id="gdt-actual-y" value="15.20" step="0.01" style="width:40%;">
+                        </div>
+                    </div>
+                    
+                    <button id="btn-gdt-random" class="btn secondary full-width mt-1"><i class="fa-solid fa-dice"></i> <span data-i18n="btn_rand_meas">ランダムズレ生成</span></button>
+                    
+                    <hr>
+
+                    <h3><i class="fa-solid fa-compress"></i> <span data-i18n="gdt_mmc_title">最大実体公差方式 (MMC)</span></h3>
+                    <div class="control-group flex-between">
+                        <label for="gdt-mmc-toggle" data-i18n="gdt_mmc_toggle">MMC 適用 (Ⓜ)</label>
+                        <input type="checkbox" id="gdt-mmc-toggle" class="ios-switch">
+                    </div>
+                    <div id="gdt-mmc-settings" style="padding: 10px; background: rgba(0,0,0,0.1); border-radius: 6px; margin-bottom: 15px;">
+                        <div class="control-group">
+                            <label for="gdt-lmc-limit" data-i18n="gdt_mmc_limit">MMC時の穴径 (最小許容径)</label>
+                            <input type="number" id="gdt-lmc-limit" value="10.00" step="0.01">
+                        </div>
+                        <div class="control-group">
+                            <label for="gdt-actual-hole" data-i18n="gdt_actual_hole">実際の穴径測定値</label>
+                            <input type="number" id="gdt-actual-hole" value="10.15" step="0.01">
+                        </div>
+                        <div class="flex-between" style="font-size: 0.85rem; color: var(--secondary-color);">
+                            <span data-i18n="gdt_bonus">ボーナス公差:</span>
+                            <strong id="gdt-bonus-val">+0.15</strong>
+                        </div>
+                        <div class="flex-between mt-1" style="font-size: 0.85rem; font-weight:bold;">
+                            <span data-i18n="gdt_total_tol">実効位置度公差:</span>
+                            <strong id="gdt-total-tol-val">0.65</strong>
+                        </div>
+                    </div>
+                    
+                    <div id="gdt-alerts" class="mt-3"></div>
+
+                    <!-- GD&T Notation Display -->
+                    <div id="gdt-notation-box" class="mt-3" style="padding:10px; background:rgba(0,0,0,0.15); border-radius:8px; font-family:'Courier New',monospace; font-size:0.85rem; line-height:1.6;">
+                        <div style="font-weight:bold; margin-bottom:6px; font-family:inherit; color:var(--secondary-color);" data-i18n="gdt_notation_title">公差表記</div>
+                        <div id="gdt-notation-content"></div>
+                    </div>
+                </aside>
+
+                <!-- Right: Dual Views -->
+                <div class="main-content" style="min-width: 0;">
+                    
+                    <div class="gdt-dual-pane" style="display: flex; gap: 20px; height: 100%; width: 100%;">
+                        <!-- 3D / 2D Canvas Pane (Tabs) -->
+                        <div class="panel gdt-pane-left flex-col" style="flex: 1.5; padding: 0; min-height: 480px; min-width: 0; display: flex; flex-direction: column; position: relative;">
+                            <div class="flex-header compact-header" style="padding: 10px 15px 0 15px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border-color); display: flex; gap: 0; align-items: flex-end;">
+                                <button class="gdt-tab-btn active" onclick="switchGdtTab('3d')" id="gdt-tab-btn-3d"><i class="fa-solid fa-cube"></i> <span data-i18n="gdt_3d_view">3D 空間ビュー</span></button>
+                                <button class="gdt-tab-btn" onclick="switchGdtTab('2d')" id="gdt-tab-btn-2d"><i class="fa-solid fa-search"></i> <span>2D 詳細ビュー</span></button>
+                            </div>
+                            
+                            <div id="gdt-3d-container" style="flex: 1; position: relative; display: block; overflow: hidden; background: var(--panel-bg);">
+                                <!-- Three.js Canvas injected here -->
+                            </div>
+                            
+                            <button id="gdt-3d-rotate-btn" onclick="toggleGdt3dRotate()" style="position: absolute; bottom: 15px; right: 15px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); color: #fff; padding: 5px 10px; border-radius: 4px; cursor: pointer; z-index: 10;">
+                                <i id="gdt-3d-rotate-icon" class="fa-solid fa-pause"></i> <span id="gdt-3d-rotate-text" data-i18n="gdt_stop_rot">回転停止</span>
+                            </button>
+                            
+                            <div id="gdt-2d-container" style="flex: 1; display: none; overflow: hidden; background: var(--panel-bg); padding: 10px; align-items: center; justify-content: center;">
+                                <canvas id="gdt-2d-canvas" width="800" height="800" style="display: block; max-width: 100%; max-height: 100%; margin: auto; aspect-ratio: 1;"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Right Pane: Stats & Drawing View -->
+                        <div class="gdt-right-col flex-col" style="flex: 1; min-width: 0;">
+                            
+                            <!-- Results Board -->
+                            <div class="stats-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 12px; gap: 10px;">
+                                <div class="stat-card highlight">
+                                    <div class="stat-title" data-i18n="gdt_pos_error">位置度 (⌀)</div>
+                                    <div class="stat-value" id="gdt-stat-error" style="font-size: 1.5rem; margin: 6px 0;">0.000</div>
+                                    <div class="stat-sub">Limit: ⌀<span id="gdt-stat-limit">0.500</span></div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-title">±公差 (ΔX / ΔY)</div>
+                                    <div class="stat-value" id="gdt-stat-pm" style="font-size: 1.2rem; margin: 6px 0;">±0.000 / ±0.000</div>
+                                    <div class="stat-sub">Limit: ±<span id="gdt-stat-pm-limit">0.250</span></div>
+                                </div>
+                            </div>
+
+                            <!-- Blueprint Drawing View -->
+                            <div class="panel gdt-pane-drawing flex-col" style="flex: 1; padding: 0; display:flex; flex-direction:column;">
+                                <div class="flex-header compact-header" style="padding: 10px 15px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border-color);">
+                                    <h3 style="margin: 0; font-size: 1rem;"><i class="fa-solid fa-drafting-compass"></i> <span>図面ビュー</span></h3>
+                                </div>
+                                <div id="gdt-drawing-container" style="flex: 1; display: flex; justify-content: center; align-items: center; padding: 20px;">
+                                    <canvas id="gdt-drawing-canvas" width="400" height="400" style="max-width: 100%; border-radius: 8px; background: var(--panel-bg); border: 1px solid var(--border-color);"></canvas>
+                                </div>
+                                <!-- Legend -->
+                                <div style="padding: 10px 15px; display: flex; justify-content: center; gap: 20px; font-size: 0.8rem; background: rgba(0,0,0,0.1); flex-wrap: wrap;">
+                                    <div style="display:flex; align-items:center;"><span style="display:inline-block; width:12px; height:12px; background:rgba(6,182,212,0.2); border:1px solid #06b6d4; border-radius:50%; margin-right:6px;"></span><span data-i18n="gdt_circle_tol">位置度公差</span></div>
+                                    <div style="display:flex; align-items:center;"><span style="display:inline-block; width:12px; height:12px; background:rgba(239,68,68,0.1); border:1px dashed #ef4444; margin-right:6px;"></span><span data-i18n="gdt_box_tol">±公差領域</span></div>
+                                    <div style="display:flex; align-items:center;"><span style="display:inline-block; width:12px; height:12px; background:#10b981; border-radius:50%; margin-right:6px;"></span><span data-i18n="gdt_act_pt">測定点</span></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
