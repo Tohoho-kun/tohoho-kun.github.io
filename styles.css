@@ -738,8 +738,6 @@ hr {
     border-radius: 6px 6px 0 0;
     z-index: 2;
 }
-<<<<<<< HEAD
-=======
 
 /* -----------------------------
    Symbol Combiner Styles
@@ -921,4 +919,3 @@ hr {
 .color-option-symbol input:checked + .swatch-symbol {
     box-shadow: 0 0 0 2px var(--bg-color), 0 0 0 4px var(--primary-color);
 }
->>>>>>> 802e507 (Integrate Symbol Combiner and fix missing i18n keys for GD&T)

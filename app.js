@@ -80,9 +80,6 @@ const i18n = {
         gdt_warn_corner: "⚠️ ±公差では四角の領域内ですが、位置度（円外）では不合格です！",
         gdt_warn_fail: "不合格 (公差範囲外)",
         gdt_stop_rot: "回転停止",
-<<<<<<< HEAD
-        gdt_start_rot: "回転開始"
-=======
         gdt_start_rot: "回転開始",
         gdt_tol_type_label: "公差表示タイプ",
         gdt_notation_title: "公差表記",
@@ -117,7 +114,6 @@ const i18n = {
         copyImage: "画像をコピー",
         copySuccess: "コピーしました！",
         copyFail: "コピーに失敗しました。"
->>>>>>> 802e507 (Integrate Symbol Combiner and fix missing i18n keys for GD&T)
     },
     en: {
         portal_title: "Engineering Tools Portal",
@@ -199,24 +195,21 @@ const i18n = {
         gdt_warn_corner: "⚠️ Passes +/- boundary (in square corner), but Fails Position (Outside circle)!",
         gdt_warn_fail: "Fail (Outside boundaries)",
         gdt_stop_rot: "Stop Rotation",
-<<<<<<< HEAD
-        gdt_start_rot: "Start Rotation"
-=======
         gdt_start_rot: "Start Rotation",
         gdt_tol_type_label: "Tolerance Display Type",
         gdt_notation_title: "Tolerance Notation",
         symbol_app_title: "Symbol Combiner",
         symbol_app_desc: "Combine symbols and text to create original icons.",
         symbol_title: "Symbol Combiner",
-        symbol_subtitle: "Combine symbols and text to create original icons.",
+        symbol_subtitle: "Create original icons by combining symbols and text.",
         selectSymbol: "Select Symbol",
         circle: "Circle",
         square: "Square",
         triangle: "Triangle",
-        invertedTriangle: "Inv Triangle",
+        invertedTriangle: "Inverted Triangle",
         diamond: "Diamond",
         symbolStyle: "Symbol Style",
-        outline: "Outline",
+        outline: "Outline Only",
         fill: "Fill",
         textInputLabel: "Text (Max 2 chars)",
         textSettings: "Text Settings",
@@ -232,11 +225,10 @@ const i18n = {
         white: "White",
         backgroundColor: "Background",
         transparent: "Transparent",
-        solid: "Solid",
+        solid: "Solid Fill",
         copyImage: "Copy Image",
         copySuccess: "Copied!",
-        copyFail: "Failed to copy image."
->>>>>>> 802e507 (Integrate Symbol Combiner and fix missing i18n keys for GD&T)
+        copyFail: "Failed to copy."
     },
     es: {
         portal_title: "Portal de Herramientas de Ingeniería",
@@ -318,16 +310,13 @@ const i18n = {
         gdt_warn_corner: "⚠️ Aceptado en +/-, ¡pero Falla Posición (fuera del círculo)!",
         gdt_warn_fail: "Falla (Fuera de límites)",
         gdt_stop_rot: "Detener Rotación",
-<<<<<<< HEAD
-        gdt_start_rot: "Iniciar Rotación"
-=======
         gdt_start_rot: "Iniciar Rotación",
         gdt_tol_type_label: "Tipo de Visualización de Tolerancia",
         gdt_notation_title: "Notación de Tolerancia",
         symbol_app_title: "Combinador de Símbolos",
         symbol_app_desc: "Combina símbolos y texto para crear iconos originales.",
         symbol_title: "Combinador de Símbolos",
-        symbol_subtitle: "Combina símbolos y texto para crear iconos originales.",
+        symbol_subtitle: "Crea iconos originales combinando símbolos y texto.",
         selectSymbol: "Seleccionar Símbolo",
         circle: "Círculo",
         square: "Cuadrado",
@@ -335,27 +324,26 @@ const i18n = {
         invertedTriangle: "Triángulo Invertido",
         diamond: "Diamante",
         symbolStyle: "Estilo de Símbolo",
-        outline: "Contorno",
+        outline: "Solo Contorno",
         fill: "Relleno",
-        textInputLabel: "Texto (Máx 2 caracteres)",
+        textInputLabel: "Texto (Máx. 2 car.)",
         textSettings: "Ajustes de Texto",
         size: "Tamaño",
         posX: "Posición X",
         posY: "Posición Y",
         textStyle: "Estilo de Texto",
         bold: "Negrita",
-        italic: "Itálica",
+        italic: "Cursiva",
         underline: "Subrayado",
         mainColor: "Color Principal",
         black: "Negro",
         white: "Blanco",
         backgroundColor: "Fondo",
         transparent: "Transparente",
-        solid: "Sólido",
+        solid: "Relleno Sólido",
         copyImage: "Copiar Imagen",
         copySuccess: "¡Copiado!",
-        copyFail: "Error al copiar la imagen."
->>>>>>> 802e507 (Integrate Symbol Combiner and fix missing i18n keys for GD&T)
+        copyFail: "Error al copiar."
     }
 };
 
@@ -429,12 +417,9 @@ function handleRoute() {
     } else if (hash === '#gdt-position') {
         renderTemplate('view-gdt', content);
         initGdtSimulator();
-<<<<<<< HEAD
-=======
     } else if (hash === '#symbol-combiner') {
         renderTemplate('view-symbol-combiner', content);
         initSymbolCombiner();
->>>>>>> 802e507 (Integrate Symbol Combiner and fix missing i18n keys for GD&T)
     } else {
         window.location.hash = '#home'; // fallback
     }
@@ -1444,13 +1429,6 @@ function calculateGdt() {
     const isPassPos = posError <= totalTol;
     
     // UI Updates
-<<<<<<< HEAD
-    const devEl = document.getElementById('gdt-stat-dev');
-    if (devEl) {
-        devEl.innerText = `${dx>0?'+':''}${dx.toFixed(3)}, ${dy>0?'+':''}${dy.toFixed(3)}`;
-    }
-=======
->>>>>>> 802e507 (Integrate Symbol Combiner and fix missing i18n keys for GD&T)
     const errEl = document.getElementById('gdt-stat-error');
     if (errEl) {
         errEl.innerText = posError.toFixed(3);
@@ -1462,8 +1440,6 @@ function calculateGdt() {
     // ± stat card
     const pmEl = document.getElementById('gdt-stat-pm');
     if (pmEl) {
-        const absDx = Math.abs(dx);
-        const absDy = Math.abs(dy);
         pmEl.innerText = `${dx>=0?'+':''}${dx.toFixed(3)} / ${dy>=0?'+':''}${dy.toFixed(3)}`;
         pmEl.style.color = isPassBox ? '#10b981' : '#ef4444';
     }
@@ -2269,10 +2245,7 @@ function updateGdt3DState(dx, dy, tol, isPassPos) {
         gdtCamera.position.add(delta);
     }
 }
-<<<<<<< HEAD
-=======
 
-// --- Symbol Combiner Core ---
 // --- Symbol Combiner Core ---
 function initSymbolCombiner() {
     const container = document.querySelector('.symbol-layout');
