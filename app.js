@@ -2453,4 +2453,3 @@ function initSymbolCombiner() {
 
     draw();
 }
->>>>>>> 802e507 (Integrate Symbol Combiner and fix missing i18n keys for GD&T)
