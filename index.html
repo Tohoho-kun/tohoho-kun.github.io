@@ -76,7 +76,18 @@
                         </div>
                         <div class="app-card-content">
                             <h3 data-i18n="gdt_title">GD&T 位置度シミュレーター</h3>
-                            <p data-i18n="gdt_app_desc">3D空間と2D平面で位置度（Position）の概念を視覚化し、±公差との違いを学ぶ教育ツール。</p>
+                            <p data-i18n="gdt_app_desc">3D空間と2D平面で位置度（Position）的概念を視覚化し、±公差との違いを学ぶ教育ツール。</p>
+                        </div>
+                    </div>
+
+                    <!-- App Card -->
+                    <div class="app-card" onclick="window.location.hash='#symbol-combiner'">
+                        <div class="app-card-icon">
+                            <i class="fa-solid fa-icons"></i>
+                        </div>
+                        <div class="app-card-content">
+                            <h3 data-i18n="symbol_app_title">記号・アイコン コンバイナー</h3>
+                            <p data-i18n="symbol_app_desc">記号と文字を組み合わせて、オリジナルのアイコンを簡単に作成・コピーできるツール。</p>
                         </div>
                     </div>
                 </div>
@@ -496,6 +507,141 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+    </template>
+
+    <!-- Symbol Combiner Template -->
+    <template id="view-symbol-combiner">
+        <div class="container x-large fade-in">
+            <div class="page-header flex-header">
+                <div>
+                    <button class="back-link" onclick="window.location.hash='#home'"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="back_home">ホームへ戻る</span></button>
+                    <h1 data-i18n="symbol_title">記号・アイコン コンバイナー</h1>
+                </div>
+                <p class="warning-text" data-i18n="symbol_subtitle">記号と文字を組み合わせて、オリジナルのアイコンを作成します。</p>
+            </div>
+
+            <div class="layout-grid symbol-layout">
+                <!-- Left: Controls -->
+                <aside class="control-panel panel">
+                    <div class="control-group">
+                        <label class="group-label" data-i18n="selectSymbol">記号を選択</label>
+                        <div class="radio-grid-symbol">
+                            <label class="radio-card-symbol">
+                                <input type="radio" name="symbol" value="circle" checked>
+                                <span class="radio-visual-symbol">○</span>
+                                <span class="radio-label-symbol" data-i18n="circle">丸</span>
+                            </label>
+                            <label class="radio-card-symbol">
+                                <input type="radio" name="symbol" value="square">
+                                <span class="radio-visual-symbol">□</span>
+                                <span class="radio-label-symbol" data-i18n="square">四角</span>
+                            </label>
+                            <label class="radio-card-symbol">
+                                <input type="radio" name="symbol" value="triangle">
+                                <span class="radio-visual-symbol">△</span>
+                                <span class="radio-label-symbol" data-i18n="triangle">三角</span>
+                            </label>
+                            <label class="radio-card-symbol">
+                                <input type="radio" name="symbol" value="inverted_triangle">
+                                <span class="radio-visual-symbol">▽</span>
+                                <span class="radio-label-symbol" data-i18n="invertedTriangle">逆三角</span>
+                            </label>
+                            <label class="radio-card-symbol">
+                                <input type="radio" name="symbol" value="diamond">
+                                <span class="radio-visual-symbol">◇</span>
+                                <span class="radio-label-symbol" data-i18n="diamond">菱形</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="group-label" data-i18n="symbolStyle">記号のスタイル</label>
+                        <div class="gdt-mode-btns" style="display:flex; gap:4px;">
+                            <button id="symbol-style-outline" class="btn small active" style="flex:1;" data-style="outline" data-i18n="outline">枠線のみ</button>
+                            <button id="symbol-style-fill" class="btn small" style="flex:1;" data-style="fill" data-i18n="fill">塗りつぶし</button>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="control-group">
+                        <label class="group-label" for="symbol-text-input" data-i18n="textInputLabel">文字 (最大2文字)</label>
+                        <input type="text" id="symbol-text-input" maxlength="2" placeholder="A" value="A" style="font-size: 1.2rem; text-align: center;">
+                    </div>
+
+                    <div class="control-group">
+                        <label class="group-label" data-i18n="textSettings">文字の設定</label>
+                        <div class="slider-control-symbol">
+                            <label data-i18n="size">サイズ</label>
+                            <input type="range" id="symbol-text-size" min="10" max="400" value="360">
+                        </div>
+                        <div class="slider-control-symbol">
+                            <label data-i18n="posX">位置 X</label>
+                            <input type="range" id="symbol-text-x" min="-256" max="256" value="0">
+                        </div>
+                        <div class="slider-control-symbol">
+                            <label data-i18n="posY">位置 Y</label>
+                            <input type="range" id="symbol-text-y" min="-256" max="256" value="0">
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="group-label" data-i18n="textStyle">文字のスタイル</label>
+                        <div class="checkbox-group-symbol">
+                            <label class="checkbox-pill-symbol">
+                                <input type="checkbox" id="symbol-bold">
+                                <span data-i18n="bold">太字</span>
+                            </label>
+                            <label class="checkbox-pill-symbol">
+                                <input type="checkbox" id="symbol-italic">
+                                <span data-i18n="italic">イタリック</span>
+                            </label>
+                            <label class="checkbox-pill-symbol">
+                                <input type="checkbox" id="symbol-underline">
+                                <span data-i18n="underline">下線</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="group-label" data-i18n="mainColor">メインカラー</label>
+                        <div class="color-selector-symbol">
+                            <label class="color-option-symbol">
+                                <input type="radio" name="mainColor" value="black" checked>
+                                <span class="swatch-symbol black"></span>
+                                <span data-i18n="black">黒</span>
+                            </label>
+                            <label class="color-option-symbol">
+                                <input type="radio" name="mainColor" value="white">
+                                <span class="swatch-symbol white"></span>
+                                <span data-i18n="white">白</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="group-label" data-i18n="backgroundColor">背景</label>
+                        <div class="gdt-mode-btns" style="display:flex; gap:4px;">
+                            <button id="symbol-bg-transparent" class="btn small active" style="flex:1;" data-bg="transparent" data-i18n="transparent">透明</button>
+                            <button id="symbol-bg-solid" class="btn small" style="flex:1;" data-bg="solid" data-i18n="solid">塗りつぶし</button>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Right: Preview -->
+                <div class="main-content symbol-main">
+                    <div class="preview-panel panel">
+                        <div class="canvas-container-symbol">
+                            <canvas id="symbol-canvas" width="512" height="512"></canvas>
+                        </div>
+                        <button id="symbol-copy-btn" class="btn primary full-width mt-4">
+                            <i class="fa-regular fa-copy"></i> <span data-i18n="copyImage">画像をコピー</span>
+                        </button>
                     </div>
                 </div>
             </div>
