@@ -197,9 +197,7 @@ const i18n = {
         weld_help_guide: "測定ガイドイメージ",
         weld_guide_example_title: "測定手順の参考例",
         imgcmp_app_title: "圧縮フォーマット比較ツール",
-        imgcmp_app_desc: "WebP / AVIF / JPEG / PNG などの画質・ファイルサイズを並べて比較。PSNR・RMSE・差分マップで客観評価。",
-        xenc_app_title: "X投稿専用 画質絶対防衛エンコーダー",
-        xenc_app_desc: "X(Twitter)の画質圧縮を回避。渐変ノイズでフラット領域を保護し、「画質絶対防衛」を実現するエンコーダー。"
+        imgcmp_app_desc: "WebP / AVIF / JPEG / PNG などの画質・ファイルサイズを並べて比較。PSNR・RMSE・差分マップで客観評価。"
     },
     en: {
         portal_title: "Engineering Tools Portal",
@@ -398,9 +396,7 @@ const i18n = {
         weld_help_guide: "Measurement Guide Image",
         weld_guide_example_title: "Measurement Reference Examples",
         imgcmp_app_title: "Image Compression Format Comparator",
-        imgcmp_app_desc: "Compare image quality and file size across WebP / AVIF / JPEG / PNG. Objective evaluation with PSNR, RMSE, and diff maps.",
-        xenc_app_title: "X-Post Image Quality Defense Encoder",
-        xenc_app_desc: "Avoid X (Twitter) image compression. Protect flat areas with gradation noise to achieve absolute image quality defense."
+        imgcmp_app_desc: "Compare image quality and file size across WebP / AVIF / JPEG / PNG. Objective evaluation with PSNR, RMSE, and diff maps."
     },
     es: {
         portal_title: "Portal de Herramientas de Ingeniería",
@@ -599,9 +595,7 @@ const i18n = {
         weld_help_guide: "Imagen de la guía de medición",
         weld_guide_example_title: "Ejemplos de referencia de medición",
         imgcmp_app_title: "Comparador de Formatos de Compresión de Imágenes",
-        imgcmp_app_desc: "Compara calidad y tamaño de archivo entre WebP / AVIF / JPEG / PNG. Evaluación objetiva con PSNR, RMSE y mapas de diferencias.",
-        xenc_app_title: "Codificador de Defensa de Calidad de Imagen para X",
-        xenc_app_desc: "Evita la compresión de imágenes de X (Twitter). Protege áreas planas con ruido de gradación para lograr la defensa absoluta de calidad de imagen."
+        imgcmp_app_desc: "Compara calidad y tamaño de archivo entre WebP / AVIF / JPEG / PNG. Evaluación objetiva con PSNR, RMSE y mapas de diferencias."
     }
 };
 
