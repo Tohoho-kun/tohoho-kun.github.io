@@ -1,0 +1,2055 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>圧縮フォーマット比較ツール</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Load UTIF.js for TIFF decoding support -->
+    <script src="https://unpkg.com/utif@latest/UTIF.js"></script>
+    <style>
+        :root {
+            --bg-color: #0b0b0b;
+            --panel-bg: rgba(22, 22, 22, 0.8);
+            --panel-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f5f5f5;
+            --text-secondary: #a3a3a3;
+            --accent-color: #e5e5e5;
+            --accent-hover: #ffffff;
+            --danger-color: #ef4444;
+            --success-color: #10b981;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Sidebar Control Panel */
+        .sidebar {
+            width: 380px;
+            background: var(--panel-bg);
+            border-right: 1px solid var(--panel-border);
+            backdrop-filter: blur(12px);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            gap: 20px;
+            overflow-y: auto;
+            z-index: 10;
+            flex-shrink: 0;
+        }
+
+        h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .subtitle {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .section-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            border-bottom: 1px solid var(--panel-border);
+            padding-bottom: 5px;
+        }
+
+        /* Drag and Drop Zone */
+        .dropzone {
+            border: 2px dashed var(--panel-border);
+            border-radius: 8px;
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .dropzone:hover, .dropzone.dragover {
+            border-color: var(--accent-color);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .dropzone p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .dropzone .icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+            color: var(--accent-color);
+        }
+
+        /* Form elements */
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--panel-border);
+        }
+
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        select, input[type="number"] {
+            background: #262626;
+            border: 1px solid var(--panel-border);
+            color: var(--text-primary);
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        select:focus, input[type="number"]:focus {
+            border-color: var(--accent-color);
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 4px;
+        }
+
+        input[type="range"] {
+            flex-grow: 1;
+            accent-color: var(--accent-color);
+            cursor: pointer;
+        }
+
+        /* Toggle Button / Switch */
+        .switch-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--panel-border);
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #404040;
+            transition: .3s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--accent-color);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+
+        /* Minimap Canvas */
+        .minimap-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--panel-border);
+        }
+
+        .minimap-canvas-wrapper {
+            width: 100%;
+            height: 140px;
+            background: #121212;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border: 1px solid var(--panel-border);
+        }
+
+        #diffMinimap {
+            max-width: 100%;
+            max-height: 100%;
+            display: block;
+        }
+
+        /* Stats Table */
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+            margin-top: 5px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .stats-table th, .stats-table td {
+            padding: 8px 10px;
+            text-align: left;
+            border-bottom: 1px solid var(--panel-border);
+        }
+
+        .stats-table th {
+            background: rgba(255, 255, 255, 0.05);
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .stats-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Split Screens Layout */
+        .main-viewport {
+            flex-grow: 1;
+            display: flex;
+            position: relative;
+            background: #121212;
+        }
+
+        .viewport-pane {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .viewport-pane:first-child {
+            border-right: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .viewport-header {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(30, 30, 30, 0.85);
+            backdrop-filter: blur(8px);
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--panel-border);
+            z-index: 5;
+            font-size: 0.8rem;
+            font-weight: 500;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+        }
+
+        .viewport-title {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .viewport-sub {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+        }
+
+        .viewport-canvas-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            cursor: grab;
+        }
+
+        .viewport-canvas-container:active {
+            cursor: grabbing;
+        }
+
+        .render-canvas, .diff-overlay-canvas {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform-origin: center center;
+            display: none;
+            image-rendering: pixelated;
+        }
+
+        .diff-overlay-canvas {
+            pointer-events: none;
+            mix-blend-mode: normal;
+            z-index: 2;
+        }
+
+        .viewport-loader {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(11, 11, 11, 0.65);
+            backdrop-filter: blur(4px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 8;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid var(--accent-color);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .viewport-btn-group {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 9;
+        }
+
+        .viewport-download-btn {
+            background: rgba(22, 22, 22, 0.85);
+            border: 1px solid var(--panel-border);
+            color: var(--text-primary);
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+        }
+
+        .viewport-copy-btn {
+            background: rgba(22, 22, 22, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: var(--text-secondary);
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+        }
+
+        .viewport-copy-btn:hover {
+            background: rgba(40, 40, 40, 0.95);
+            border-color: var(--text-secondary);
+            color: var(--text-primary);
+        }
+
+        .viewport-download-btn:hover {
+            background: var(--text-primary);
+            color: var(--bg-color);
+            border-color: var(--text-primary);
+        }
+
+        /* Tabs for layout modes */
+        .tab-group {
+            display: flex;
+            background: rgba(0, 0, 0, 0.25);
+            padding: 3px;
+            border-radius: 8px;
+            border: 1px solid var(--panel-border);
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            background: var(--accent-color);
+            color: #111111;
+        }
+
+        /* Error/Warning Banner */
+        .banner {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid var(--danger-color);
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 0.75rem;
+            color: #fca5a5;
+            display: none;
+            margin-bottom: 10px;
+        }
+
+        /* Centered Instructions */
+        .placeholder-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            pointer-events: none;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .placeholder-text svg {
+            width: 48px;
+            height: 48px;
+            stroke: var(--text-secondary);
+            opacity: 0.6;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar Control Panel -->
+    <aside class="sidebar">
+        <div>
+            <h1>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-color);"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m10 8 6 4-6 4V8z"/></svg>
+                圧縮フォーマット比較ツール
+            </h1>
+            <div class="subtitle">Image Quality & Size Comparator</div>
+        </div>
+
+        <!-- Warning / Error Banner -->
+        <div id="errorBanner" class="banner"></div>
+
+        <!-- 1. Input Image -->
+        <section>
+            <div class="section-title">1. 画像の入力</div>
+            <div class="dropzone" id="dropzone">
+                <div class="icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                </div>
+                <p>ドラッグ＆ドロップ<br>またはクリックして選択</p>
+                <input type="file" id="fileInput" accept="image/*,image/tiff" style="display: none;">
+            </div>
+        </section>
+
+        <!-- 2. Mode Select -->
+        <section>
+            <div class="section-title">2. 比較モード</div>
+            <div class="tab-group">
+                <button class="tab-btn active" id="modeA-btn">入力ファイル vs 条件B</button>
+                <button class="tab-btn" id="modeB-btn">条件A vs 条件B</button>
+            </div>
+        </section>
+
+        <!-- 3. Compression Controls (Left Side - visible in Mode B) -->
+        <section id="leftConfigSection" style="display: none;">
+            <div class="section-title">3. 条件A (左画面)</div>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div class="control-row">
+                    <label for="formatA">フォーマット</label>
+                    <select id="formatA">
+                        <option value="image/webp" selected>WebP (8-bit)</option>
+                        <option value="image/jpeg">JPEG (8-bit)</option>
+                        <option value="mozjpeg">MozJPEG (8-bit) (WASM)</option>
+                        <option value="image/avif">AVIF (8-bit) (WASM)</option>
+                        <option value="png-32">PNG (32-bit RGBA)</option>
+                        <option value="png-24">PNG (24-bit RGB)</option>
+                        <option value="png-8">PNG (8-bit quantized)</option>
+                        <option value="x-photo">X投稿専用：写真 (JPEG優先)</option>
+                        <option value="x-illustration">X投稿専用：イラスト (PNG/JPEG自動)</option>
+                    </select>
+                </div>
+
+                <!-- Quality Control -->
+                <div class="control-group" id="qualityGroupA">
+                    <div class="control-row">
+                        <label for="numQualityA">クオリティ</label>
+                        <input type="number" id="numQualityA" min="0" max="100" value="80">
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" id="rangeQualityA" min="0" max="100" value="80">
+                    </div>
+                </div>
+
+                <!-- X-Optimizer settings A -->
+                <div class="control-group" id="xSettingsGroupA" style="display: none; flex-direction: column; gap: 10px;">
+                    <div class="slider-container" style="flex-direction: column; align-items: stretch; gap: 4px;">
+                        <div class="control-row">
+                            <label for="rangeXDitherA">階調保護ノイズ強度</label>
+                            <span id="txtXDitherA" style="font-size: 0.8rem; font-weight: 600;">2x</span>
+                        </div>
+                        <input type="range" id="rangeXDitherA" min="0" max="10" value="2">
+                    </div>
+                    <div class="control-row" id="pngOptRowA" style="display: none;">
+                        <label for="pngConstraintA">長辺900px制限 (PNG維持)</label>
+                        <label class="switch">
+                            <input type="checkbox" id="pngConstraintA" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. Compression Controls (Right Side - visible in both) -->
+        <section>
+            <div class="section-title" id="rightConfigTitle">3. エンコード条件 (右画面)</div>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div class="control-row">
+                    <label for="formatB">フォーマット</label>
+                    <select id="formatB">
+                        <option value="image/webp" selected>WebP (8-bit)</option>
+                        <option value="image/jpeg">JPEG (8-bit)</option>
+                        <option value="mozjpeg">MozJPEG (8-bit) (WASM)</option>
+                        <option value="image/avif">AVIF (8-bit) (WASM)</option>
+                        <option value="png-32">PNG (32-bit RGBA)</option>
+                        <option value="png-24">PNG (24-bit RGB)</option>
+                        <option value="png-8">PNG (8-bit quantized)</option>
+                        <option value="x-photo">X投稿専用：写真 (JPEG優先)</option>
+                        <option value="x-illustration">X投稿専用：イラスト (PNG/JPEG自動)</option>
+                    </select>
+                </div>
+
+                <!-- Quality Control -->
+                <div class="control-group" id="qualityGroupB">
+                    <div class="control-row">
+                        <label for="numQualityB">クオリティ</label>
+                        <input type="number" id="numQualityB" min="0" max="100" value="80">
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" id="rangeQualityB" min="0" max="100" value="80">
+                    </div>
+                </div>
+
+                <!-- X-Optimizer settings B -->
+                <div class="control-group" id="xSettingsGroupB" style="display: none; flex-direction: column; gap: 10px;">
+                    <div class="slider-container" style="flex-direction: column; align-items: stretch; gap: 4px;">
+                        <div class="control-row">
+                            <label for="rangeXDitherB">階調保護ノイズ強度</label>
+                            <span id="txtXDitherB" style="font-size: 0.8rem; font-weight: 600;">2x</span>
+                        </div>
+                        <input type="range" id="rangeXDitherB" min="0" max="10" value="2">
+                    </div>
+                    <div class="control-row" id="pngOptRowB" style="display: none;">
+                        <label for="pngConstraintB">長辺900px制限 (PNG維持)</label>
+                        <label class="switch">
+                            <input type="checkbox" id="pngConstraintB" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. Difference Minimap -->
+        <section>
+            <div class="section-title">4. 差分マップ</div>
+            <div class="minimap-container">
+                <div class="minimap-canvas-wrapper">
+                    <canvas id="diffMinimap" width="200" height="150"></canvas>
+                </div>
+                <div style="width: 100%; display: flex; flex-direction: column; gap: 4px;">
+                    <div class="control-row">
+                        <label for="rangeDiffAmp">差分強調倍率</label>
+                        <span id="txtDiffAmp" style="font-size: 0.8rem; font-weight: 600;">1x</span>
+                    </div>
+                    <input type="range" id="rangeDiffAmp" min="1" max="100" value="1">
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. Main Overlay Toggle -->
+        <div class="switch-container">
+            <label for="toggleOverlay">画面内差分オーバーレイ</label>
+            <label class="switch">
+                <input type="checkbox" id="toggleOverlay">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <!-- 6b. Advanced Overlay Controls (Hidden by default) -->
+        <div id="overlaySettings" style="display: none; flex-direction: column; gap: 10px; background: rgba(0, 0, 0, 0.2); padding: 12px; border-radius: 8px; border: 1px solid var(--panel-border); margin-top: -10px;">
+            <div style="width: 100%; display: flex; flex-direction: column; gap: 4px;">
+                <div class="control-row">
+                    <label for="rangeOverlayOpacity">オーバーレイ不透明度</label>
+                    <span id="txtOverlayOpacity" style="font-size: 0.8rem; font-weight: 600;">80%</span>
+                </div>
+                <input type="range" id="rangeOverlayOpacity" min="0" max="100" value="80">
+            </div>
+
+            <div class="control-row">
+                <label for="overlayTarget">適用対象</label>
+                <select id="overlayTarget">
+                    <option value="both" selected>左右両画面</option>
+                    <option value="left">左画面のみ</option>
+                    <option value="right">右画面のみ</option>
+                </select>
+            </div>
+
+            <div class="control-row">
+                <label for="overlayBlendMode">合成方式</label>
+                <select id="overlayBlendMode">
+                    <option value="normal" selected>通常 (Normal)</option>
+                    <option value="difference">差の絶対値 (Difference)</option>
+                    <option value="screen">スクリーン (Screen)</option>
+                    <option value="multiply">乗算 (Multiply)</option>
+                    <option value="overlay">オーバーレイ (Overlay)</option>
+                    <option value="color-dodge">覆い焼き (Color Dodge)</option>
+                    <option value="exclusion">除外 (Exclusion)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 7. Size Information -->
+        <section>
+            <div class="section-title">5. ファイルサイズ比較</div>
+            <table class="stats-table">
+                <thead>
+                    <tr>
+                        <th>状態</th>
+                        <th>サイズ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>メモリ展開時 (RGBA 32bit)</td>
+                        <td id="sizeRaw">-</td>
+                    </tr>
+                    <tr id="rowSizeOriginal">
+                        <td id="labelSizeOriginal">入力ファイル</td>
+                        <td id="sizeOriginal">-</td>
+                    </tr>
+                    <tr>
+                        <td id="labelSizeLeft">左画面 (入力ファイル)</td>
+                        <td id="sizeLeft">-</td>
+                    </tr>
+                    <tr>
+                        <td id="labelSizeRight">右画面 (条件B)</td>
+                        <td id="sizeRight">-</td>
+                    </tr>
+                    <tr>
+                        <td>品質指数 (PSNR)</td>
+                        <td id="valPSNR">-</td>
+                    </tr>
+                    <tr>
+                        <td>品質指数 (RMSE)</td>
+                        <td id="valRMSE">-</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 8px; line-height: 1.4; display: flex; flex-direction: column; gap: 4px; background: rgba(0, 0, 0, 0.15); padding: 8px; border-radius: 6px; border: 1px solid var(--panel-border);">
+                <div><strong>PSNR (ピーク信号対雑音比)</strong>: 画質再現性の指標。値が高いほどオリジナルに近く、30〜50dB程度で視覚的な差異がほぼなくなります。</div>
+                <div><strong>RMSE (二乗平均平方根誤差)</strong>: 画素間の平均的な色のズレ。値が 0 に近いほどノイズや劣化が少なくオリジナルに忠実であることを表します。</div>
+            </div>
+        </section>
+
+        <!-- 8. Encode Log -->
+        <section>
+            <div class="section-title">
+                6. エンコード履歴・ログ
+                <button id="btnClearLog" style="background: rgba(239, 68, 68, 0.2); border: 1px solid var(--danger-color); color: #fca5a5; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; float: right; margin-top: -3px; transition: all 0.2s;">クリア</button>
+            </div>
+            <div id="encodeLogContainer" style="max-height: 150px; overflow-y: auto; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--panel-border); border-radius: 6px; padding: 8px; display: flex; flex-direction: column; gap: 6px; font-size: 0.75rem; color: var(--text-secondary);">
+                <div id="logPlaceholder" style="text-align: center; padding: 10px 0;">ログはありません</div>
+            </div>
+        </section>
+    </aside>
+
+    <!-- Main Views (Split side by side) -->
+    <main class="main-viewport">
+        <div class="placeholder-text" id="viewportPlaceholder">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <p>画像をアップロードして比較を開始してください</p>
+        </div>
+
+        <!-- Left Pane -->
+        <div class="viewport-pane" id="paneLeft">
+            <div class="viewport-header">
+                <span class="viewport-title" id="headerTitleLeft">左画面 (入力ファイル)</span>
+                <span class="viewport-sub" id="headerSubLeft">-</span>
+            </div>
+            <div class="viewport-canvas-container" id="containerLeft">
+                <canvas class="render-canvas" id="canvasLeft"></canvas>
+                <canvas class="diff-overlay-canvas" id="overlayLeft"></canvas>
+                <div class="viewport-loader" id="loaderLeft" style="display: none;">
+                    <div class="spinner"></div>
+                </div>
+                <div class="viewport-btn-group">
+                    <button class="viewport-download-btn" id="btnDownloadLeft">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        <span>ダウンロード (条件A)</span>
+                    </button>
+                    <button class="viewport-copy-btn" id="btnPostXLeft">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: middle;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                        <span>コピー</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Pane -->
+        <div class="viewport-pane" id="paneRight">
+            <div class="viewport-header">
+                <span class="viewport-title" id="headerTitleRight">右画面 (条件B)</span>
+                <span class="viewport-sub" id="headerSubRight">-</span>
+            </div>
+            <div class="viewport-canvas-container" id="containerRight">
+                <canvas class="render-canvas" id="canvasRight"></canvas>
+                <canvas class="diff-overlay-canvas" id="overlayRight"></canvas>
+                <div class="viewport-loader" id="loaderRight" style="display: none;">
+                    <div class="spinner"></div>
+                </div>
+                <div class="viewport-btn-group">
+                    <button class="viewport-download-btn" id="btnDownloadRight">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        <span>ダウンロード (条件B)</span>
+                    </button>
+                    <button class="viewport-copy-btn" id="btnPostXRight">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: middle;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                        <span>コピー</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        window.addEventListener('error', (e) => {
+            showError("JSエラー: " + e.message + " (" + e.filename.split('/').pop() + ":" + e.lineno + ")");
+        });
+        window.addEventListener('unhandledrejection', (e) => {
+            showError("非同期エラー: " + e.reason);
+        });
+
+        let jpegModule = null;
+        let avifModule = null;
+        let jpegInitialized = false;
+        let avifInitialized = false;
+
+        function checkWasmThreads() {
+            try {
+                if (typeof WebAssembly === 'undefined' || typeof SharedArrayBuffer === 'undefined') return false;
+                return WebAssembly.validate(new Uint8Array([
+                    0, 97, 115, 109, 1, 0, 0, 0, 1, 4, 1, 96, 0, 0, 5, 4, 1, 3, 1, 1
+                ]));
+            } catch (e) {
+                return false;
+            }
+        }
+
+        async function initJpegWasm() {
+            if (!jpegInitialized) {
+                if (!jpegModule) {
+                    jpegModule = await import("https://esm.sh/@jsquash/jpeg@1.2.0/encode");
+                }
+                const hasThreads = checkWasmThreads();
+                const wasmPath = hasThreads 
+                    ? "https://unpkg.com/@jsquash/jpeg@1.2.0/codec/enc/mozjpeg_enc_mt.wasm" 
+                    : "https://unpkg.com/@jsquash/jpeg@1.2.0/codec/enc/mozjpeg_enc.wasm";
+                const res = await fetch(wasmPath);
+                const wasm = await res.arrayBuffer();
+                const wasmModule = await WebAssembly.compile(wasm);
+                await jpegModule.init(wasmModule);
+                jpegInitialized = true;
+            }
+        }
+
+        async function initAvifWasm() {
+            if (!avifInitialized) {
+                if (!avifModule) {
+                    avifModule = await import("https://esm.sh/@jsquash/avif@2.1.1/encode");
+                }
+                const hasThreads = checkWasmThreads();
+                const wasmPath = hasThreads 
+                    ? "https://unpkg.com/@jsquash/avif@2.1.1/codec/enc/avif_enc_mt.wasm" 
+                    : "https://unpkg.com/@jsquash/avif@2.1.1/codec/enc/avif_enc.wasm";
+                const res = await fetch(wasmPath);
+                const wasm = await res.arrayBuffer();
+                const wasmModule = await WebAssembly.compile(wasm);
+                await avifModule.init(wasmModule);
+                avifInitialized = true;
+            }
+        }
+
+        function resizeBicubic(srcData, srcW, srcH, destW, destH) {
+            const dst = new Float32Array(destW * destH * 4);
+
+            function cubicHermite(A, B, C, D, t) {
+                const a = -A / 2.0 + (3.0 * B) / 2.0 - (3.0 * C) / 2.0 + D / 2.0;
+                const b = A - (5.0 * B) / 2.0 + 2.0 * C - D / 2.0;
+                const c = -A / 2.0 + C / 2.0;
+                const d = B;
+                return a * t * t * t + b * t * t + c * t + d;
+            }
+
+            for (let dy = 0; dy < destH; dy++) {
+                const sy = (dy + 0.5) * srcH / destH - 0.5;
+                const yI = Math.floor(sy);
+                const tY = sy - yI;
+
+                for (let dx = 0; dx < destW; dx++) {
+                    const sx = (dx + 0.5) * srcW / destW - 0.5;
+                    const xI = Math.floor(sx);
+                    const tX = sx - xI;
+
+                    const dstIdx = (dy * destW + dx) * 4;
+
+                    for (let c = 0; c < 4; c++) {
+                        const temp = new Float32Array(4);
+                        for (let j = -1; j <= 2; j++) {
+                            const y = Math.max(0, Math.min(srcH - 1, yI + j));
+                            const rowIdx = y * srcW * 4;
+                            const val0 = srcData[rowIdx + Math.max(0, Math.min(srcW - 1, xI - 1)) * 4 + c];
+                            const val1 = srcData[rowIdx + Math.max(0, Math.min(srcW - 1, xI    )) * 4 + c];
+                            const val2 = srcData[rowIdx + Math.max(0, Math.min(srcW - 1, xI + 1)) * 4 + c];
+                            const val3 = srcData[rowIdx + Math.max(0, Math.min(srcW - 1, xI + 2)) * 4 + c];
+                            temp[j + 1] = cubicHermite(val0, val1, val2, val3, tX);
+                        }
+                        const val = cubicHermite(temp[0], temp[1], temp[2], temp[3], tY);
+                        dst[dstIdx + c] = Math.max(0, Math.min(255, val));
+                    }
+                }
+            }
+            return dst;
+        }
+
+        function getPrecisionData(canvas, encodeRes, isOriginal = false) {
+            const w = canvas.width;
+            const h = canvas.height;
+            const origW = state.image.width;
+            const origH = state.image.height;
+
+            const ctx = canvas.getContext('2d');
+            const imgData = ctx.getImageData(0, 0, w, h);
+            const data = imgData.data;
+
+            if (w === origW && h === origH) {
+                const size = w * h * 4;
+                const floatData = new Float32Array(size);
+                for (let i = 0; i < data.length; i++) {
+                    floatData[i] = data[i];
+                }
+                return floatData;
+            }
+
+            return resizeBicubic(data, w, h, origW, origH);
+        }
+
+        // State management
+        const state = {
+            image: null,           // Original HTMLImageElement
+            originalFile: null,    // Uploaded file reference
+            mode: 'A',             // 'A' = Original vs Cond B, 'B' = Cond A vs Cond B
+            panX: 0,
+            panY: 0,
+            scale: 1,
+            isDragging: false,
+            startX: 0,
+            startY: 0,
+            diffAmp: 1,
+            diffOverlay: false,
+            overlayOpacity: 0.8,
+            overlayTarget: 'both',
+            overlayBlendMode: 'normal',
+            leftBlobUrl: null,
+            rightBlobUrl: null,
+            tiff16Data: null,
+            tiff16Channels: 4
+        };
+
+        // DOM elements
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+        const errorBanner = document.getElementById('errorBanner');
+        const modeA_btn = document.getElementById('modeA-btn');
+        const modeB_btn = document.getElementById('modeB-btn');
+        const leftConfigSection = document.getElementById('leftConfigSection');
+        const rightConfigTitle = document.getElementById('rightConfigTitle');
+        const viewportPlaceholder = document.getElementById('viewportPlaceholder');
+
+        // Form B elements
+        const formatB = document.getElementById('formatB');
+        const qualityGroupB = document.getElementById('qualityGroupB');
+        const rangeQualityB = document.getElementById('rangeQualityB');
+        const numQualityB = document.getElementById('numQualityB');
+
+        // Form A elements
+        const formatA = document.getElementById('formatA');
+        const qualityGroupA = document.getElementById('qualityGroupA');
+        const rangeQualityA = document.getElementById('rangeQualityA');
+        const numQualityA = document.getElementById('numQualityA');
+
+        // Difference elements
+        const rangeDiffAmp = document.getElementById('rangeDiffAmp');
+        const txtDiffAmp = document.getElementById('txtDiffAmp');
+        const toggleOverlay = document.getElementById('toggleOverlay');
+        const overlaySettings = document.getElementById('overlaySettings');
+        const rangeOverlayOpacity = document.getElementById('rangeOverlayOpacity');
+        const txtOverlayOpacity = document.getElementById('txtOverlayOpacity');
+        const overlayTarget = document.getElementById('overlayTarget');
+        const overlayBlendMode = document.getElementById('overlayBlendMode');
+        const diffMinimap = document.getElementById('diffMinimap');
+
+        // Table / Viewport Stats
+        const sizeRaw = document.getElementById('sizeRaw');
+        const sizeOriginal = document.getElementById('sizeOriginal');
+        const labelSizeOriginal = document.getElementById('labelSizeOriginal');
+        const sizeLeft = document.getElementById('sizeLeft');
+        const sizeRight = document.getElementById('sizeRight');
+        const rowSizeOriginal = document.getElementById('rowSizeOriginal');
+        const labelSizeLeft = document.getElementById('labelSizeLeft');
+        const labelSizeRight = document.getElementById('labelSizeRight');
+        const valPSNR = document.getElementById('valPSNR');
+        const valRMSE = document.getElementById('valRMSE');
+
+        // Log elements
+        const encodeLogContainer = document.getElementById('encodeLogContainer');
+        const btnClearLog = document.getElementById('btnClearLog');
+
+        const paneLeft = document.getElementById('paneLeft');
+        const paneRight = document.getElementById('paneRight');
+        const headerTitleLeft = document.getElementById('headerTitleLeft');
+        const headerSubLeft = document.getElementById('headerSubLeft');
+        const headerTitleRight = document.getElementById('headerTitleRight');
+        const headerSubRight = document.getElementById('headerSubRight');
+
+        const canvasLeft = document.getElementById('canvasLeft');
+        const canvasRight = document.getElementById('canvasRight');
+        const overlayLeft = document.getElementById('overlayLeft');
+        const overlayRight = document.getElementById('overlayRight');
+
+        const containerLeft = document.getElementById('containerLeft');
+        const containerRight = document.getElementById('containerRight');
+        const loaderLeft = document.getElementById('loaderLeft');
+        const loaderRight = document.getElementById('loaderRight');
+        const btnDownloadLeft = document.getElementById('btnDownloadLeft');
+        const btnDownloadRight = document.getElementById('btnDownloadRight');
+        const btnPostXLeft = document.getElementById('btnPostXLeft');
+        const btnPostXRight = document.getElementById('btnPostXRight');
+
+        // Initial setup
+        setupFileHandlers();
+        setupConfigHandlers();
+        setupLayoutSync();
+
+        // 1. File Handlers
+        function setupFileHandlers() {
+            dropzone.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) handleFile(e.target.files[0]);
+            });
+            dropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropzone.classList.add('dragover');
+            });
+            dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+            dropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('dragover');
+                if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+            });
+        }
+
+        function showError(msg) {
+            errorBanner.textContent = msg;
+            errorBanner.style.display = msg ? 'block' : 'none';
+        }
+
+        function handleFile(file) {
+            const lowerName = file.name.toLowerCase();
+            const isTiff = lowerName.endsWith('.tiff') || lowerName.endsWith('.tif') || file.type === 'image/tiff';
+
+            if (!file.type.startsWith('image/') && !isTiff) {
+                showError('画像ファイルを選択してください。');
+                return;
+            }
+            showError('');
+
+            // Clean up old references
+            cleanupUrls();
+
+            if (isTiff) {
+                showError('TIFFファイルをデコード中...');
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const arrayBuffer = e.target.result;
+                        const ifds = UTIF.decode(arrayBuffer);
+                        UTIF.decodeImage(arrayBuffer, ifds[0]);
+                        
+                        const width = ifds[0].width;
+                        const height = ifds[0].height;
+                        const rgba = UTIF.toRGBA8(ifds[0]);
+                        
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        const imgData = ctx.createImageData(width, height);
+                        imgData.data.set(rgba);
+                        ctx.putImageData(imgData, 0, 0);
+                        
+                        const dataUrl = canvas.toDataURL();
+                        const img = new Image();
+                        img.onload = () => {
+                             state.image = img;
+                             state.originalFile = file;
+                             
+                             // Check if it's 16-bit TIFF
+                             if (ifds[0].t258 && ifds[0].t258[0] === 16) {
+                                 state.tiff16Data = ifds[0].data;
+                                 state.tiff16Channels = ifds[0].t258.length; 
+                             } else {
+                                 state.tiff16Data = null;
+                             }
+                             
+                             resetZoomAndPan();
+                            processCompare(true);
+                            viewportPlaceholder.style.display = 'none';
+                            canvasLeft.style.display = 'block';
+                            canvasRight.style.display = 'block';
+                            showError('');
+                        };
+                        img.src = dataUrl;
+                    } catch (err) {
+                        showError('TIFFファイルのデコードに失敗しました: ' + err.message);
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+                return;
+            }
+
+            // Normal browser native images (JPEG, WebP, PNG, etc.)
+            state.originalFile = file;
+            state.tiff16Data = null;
+            const imgUrl = URL.createObjectURL(file);
+            const img = new Image();
+            img.onload = () => {
+                state.image = img;
+                resetZoomAndPan();
+                processCompare(true);
+                viewportPlaceholder.style.display = 'none';
+                canvasLeft.style.display = 'block';
+                canvasRight.style.display = 'block';
+                URL.revokeObjectURL(imgUrl);
+            };
+            img.onerror = () => {
+                showError('画像の読み込みに失敗しました。');
+                URL.revokeObjectURL(imgUrl);
+            };
+            img.src = imgUrl;
+        }
+
+        function cleanupUrls() {
+            if (state.leftBlobUrl) {
+                URL.revokeObjectURL(state.leftBlobUrl);
+                state.leftBlobUrl = null;
+            }
+            if (state.rightBlobUrl) {
+                URL.revokeObjectURL(state.rightBlobUrl);
+                state.rightBlobUrl = null;
+            }
+        }
+
+        function resetZoomAndPan() {
+            if (!state.image) return;
+            const containerW = containerLeft.clientWidth;
+            const containerH = containerLeft.clientHeight;
+            const imgW = state.image.width;
+            const imgH = state.image.height;
+
+            const scaleX = containerW / imgW;
+            const scaleY = containerH / imgH;
+            state.scale = Math.min(scaleX, scaleY, 1.0) * 0.9;
+            state.panX = 0;
+            state.panY = 0;
+            applyTransforms();
+        }
+
+        function updateOverlayStyles() {
+            const leftVisible = state.diffOverlay && (state.overlayTarget === 'both' || state.overlayTarget === 'left');
+            const rightVisible = state.diffOverlay && (state.overlayTarget === 'both' || state.overlayTarget === 'right');
+            
+            overlayLeft.style.display = leftVisible ? 'block' : 'none';
+            overlayRight.style.display = rightVisible ? 'block' : 'none';
+            
+            overlayLeft.style.opacity = state.overlayOpacity;
+            overlayRight.style.opacity = state.overlayOpacity;
+            
+            overlayLeft.style.mixBlendMode = state.overlayBlendMode;
+            overlayRight.style.mixBlendMode = state.overlayBlendMode;
+        }
+
+        // 2. Control Layout / Setup
+        function setupConfigHandlers() {
+            // Mode Select Toggle
+            modeA_btn.addEventListener('click', () => {
+                state.mode = 'A';
+                modeA_btn.classList.add('active');
+                modeB_btn.classList.remove('active');
+                leftConfigSection.style.display = 'none';
+                rightConfigTitle.textContent = '3. エンコード条件 (右画面)';
+                labelSizeLeft.textContent = '左画面 (入力ファイル)';
+                labelSizeRight.textContent = '右画面 (条件B)';
+                headerTitleLeft.textContent = '左画面 (入力ファイル)';
+                processCompare(true);
+            });
+
+            modeB_btn.addEventListener('click', () => {
+                state.mode = 'B';
+                modeB_btn.classList.add('active');
+                modeA_btn.classList.remove('active');
+                leftConfigSection.style.display = 'block';
+                rightConfigTitle.textContent = '3. 条件B (右画面)';
+                labelSizeLeft.textContent = '左画面 (条件A)';
+                labelSizeRight.textContent = '右画面 (条件B)';
+                headerTitleLeft.textContent = '左画面 (条件A)';
+                processCompare(true);
+            });
+
+            const handleFormatChange = (selectEl, isA) => {
+                const val = selectEl.value;
+                const qualityGroup = isA ? qualityGroupA : qualityGroupB;
+                const xSettingsGroup = isA ? document.getElementById('xSettingsGroupA') : document.getElementById('xSettingsGroupB');
+                const pngOptRow = isA ? document.getElementById('pngOptRowA') : document.getElementById('pngOptRowB');
+
+                const isPng = val.startsWith('png-');
+                const isX = val.startsWith('x-');
+
+                if (isX) {
+                    qualityGroup.style.display = 'none';
+                    xSettingsGroup.style.display = 'flex';
+                    pngOptRow.style.display = (val === 'x-illustration') ? 'flex' : 'none';
+                } else {
+                    qualityGroup.style.display = isPng ? 'none' : 'flex';
+                    xSettingsGroup.style.display = 'none';
+                }
+                processCompare(true);
+            };
+
+            // Init quality visibility
+            handleFormatChange(formatA, true);
+            handleFormatChange(formatB, false);
+
+            formatA.addEventListener('change', () => handleFormatChange(formatA, true));
+            formatB.addEventListener('change', () => handleFormatChange(formatB, false));
+
+            // X-Optimizer Event Listeners
+            const rangeXDitherA = document.getElementById('rangeXDitherA');
+            const txtXDitherA = document.getElementById('txtXDitherA');
+            const pngConstraintA = document.getElementById('pngConstraintA');
+            const rangeXDitherB = document.getElementById('rangeXDitherB');
+            const txtXDitherB = document.getElementById('txtXDitherB');
+            const pngConstraintB = document.getElementById('pngConstraintB');
+
+            rangeXDitherA.addEventListener('input', (e) => {
+                txtXDitherA.textContent = e.target.value === '0' ? '無効' : e.target.value + 'x';
+                processCompare(true);
+            });
+            pngConstraintA.addEventListener('change', () => processCompare(true));
+
+            rangeXDitherB.addEventListener('input', (e) => {
+                txtXDitherB.textContent = e.target.value === '0' ? '無効' : e.target.value + 'x';
+                processCompare(true);
+            });
+            pngConstraintB.addEventListener('change', () => processCompare(true));
+
+            // Sync range & num quality A
+            rangeQualityA.addEventListener('input', (e) => {
+                numQualityA.value = e.target.value;
+                processCompare(false);
+            });
+            rangeQualityA.addEventListener('change', () => {
+                processCompare(true);
+            });
+            numQualityA.addEventListener('change', (e) => {
+                let val = parseInt(e.target.value);
+                if (isNaN(val)) val = 80;
+                val = Math.max(0, Math.min(100, val));
+                rangeQualityA.value = val;
+                processCompare(true);
+            });
+
+            // Sync range & num quality B
+            rangeQualityB.addEventListener('input', (e) => {
+                numQualityB.value = e.target.value;
+                processCompare(false);
+            });
+            rangeQualityB.addEventListener('change', () => {
+                processCompare(true);
+            });
+            numQualityB.addEventListener('change', (e) => {
+                let val = parseInt(e.target.value);
+                if (isNaN(val)) val = 80;
+                val = Math.max(0, Math.min(100, val));
+                rangeQualityB.value = val;
+                processCompare(true);
+            });
+
+            // Diff Amp Linkage
+            rangeDiffAmp.addEventListener('input', (e) => {
+                state.diffAmp = parseInt(e.target.value);
+                txtDiffAmp.textContent = state.diffAmp + 'x';
+                updateDifferenceMap();
+            });
+
+            // Overlay Toggle & settings
+            toggleOverlay.addEventListener('change', (e) => {
+                state.diffOverlay = e.target.checked;
+                overlaySettings.style.display = state.diffOverlay ? 'flex' : 'none';
+                updateOverlayStyles();
+                if (state.diffOverlay) {
+                    updateDifferenceMap();
+                }
+            });
+
+            rangeOverlayOpacity.addEventListener('input', (e) => {
+                const opacityVal = parseInt(e.target.value);
+                txtOverlayOpacity.textContent = opacityVal + '%';
+                state.overlayOpacity = opacityVal / 100;
+                updateOverlayStyles();
+            });
+
+            overlayTarget.addEventListener('change', (e) => {
+                state.overlayTarget = e.target.value;
+                updateOverlayStyles();
+            });
+
+            overlayBlendMode.addEventListener('change', (e) => {
+                state.overlayBlendMode = e.target.value;
+                updateOverlayStyles();
+            });
+
+            btnClearLog.addEventListener('click', () => {
+                encodeLogContainer.innerHTML = '<div id="logPlaceholder" style="text-align: center; padding: 10px 0;">ログはありません</div>';
+            });
+        }
+
+        // Helper to format byte sizes
+        function formatBytes(bytes) {
+            if (bytes === undefined || bytes === null || isNaN(bytes)) return '-';
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Color reduction / Bit Depth helper
+        function applyColorReduction(ctx, width, height, bitDepth) {
+            if (bitDepth === 32) return; // Standard RGBA
+
+            const imgData = ctx.getImageData(0, 0, width, height);
+            const data = imgData.data;
+
+            if (bitDepth === 24) {
+                // Remove alpha (set all alpha values to 255)
+                for (let i = 3; i < data.length; i += 4) {
+                    data[i] = 255;
+                }
+            } else if (bitDepth === 8) {
+                // Uniform quantization: Map colors to 8 levels of Red (3-bit), 8 levels of Green (3-bit), 4 levels of Blue (2-bit)
+                for (let i = 0; i < data.length; i += 4) {
+                    data[i] = Math.round(data[i] / 36) * 36;       // R
+                    data[i+1] = Math.round(data[i+1] / 36) * 36;   // G
+                    data[i+2] = Math.round(data[i+2] / 85) * 85;   // B
+                }
+            }
+            ctx.putImageData(imgData, 0, 0);
+        }
+
+        function showLoadingIndicator(show) {
+            if (show) {
+                showError('WASMエンコーダ実行中... 完了まで少し時間がかかる場合があります。');
+            } else {
+                showError('');
+            }
+        }
+
+        // Encode image process returning { url, size, label }
+        async function encodeImage(unifiedFormat, quality, isA) {
+            // X-Encoder implementation
+            if (unifiedFormat === 'x-photo' || unifiedFormat === 'x-illustration') {
+                const isPhoto = unifiedFormat === 'x-photo';
+                const originalW = state.image.width;
+                const originalH = state.image.height;
+                const longEdge = Math.max(originalW, originalH);
+
+                let targetW = originalW;
+                let targetH = originalH;
+                let outputFormat = 'image/jpeg';
+
+                const noiseSlider = document.getElementById(isA ? 'rangeXDitherA' : 'rangeXDitherB');
+                const pngToggle = document.getElementById(isA ? 'pngConstraintA' : 'pngConstraintB');
+                const noiseIntensity = noiseSlider ? parseInt(noiseSlider.value) : 2;
+                const limitPNG = pngToggle ? pngToggle.checked : true;
+
+                if (isPhoto) {
+                    if (longEdge > 4096) {
+                        const ratio = 4096 / longEdge;
+                        targetW = Math.round(originalW * ratio);
+                        targetH = Math.round(originalH * ratio);
+                    }
+                } else {
+                    if (longEdge > 900) {
+                        if (limitPNG) {
+                            const ratio = 900 / longEdge;
+                            targetW = Math.round(originalW * ratio);
+                            targetH = Math.round(originalH * ratio);
+                            outputFormat = 'image/png';
+                        } else {
+                            if (longEdge > 4096) {
+                                const ratio = 4096 / longEdge;
+                                targetW = Math.round(originalW * ratio);
+                                targetH = Math.round(originalH * ratio);
+                            }
+                            outputFormat = 'image/jpeg';
+                        }
+                    } else {
+                        outputFormat = 'image/png';
+                    }
+                }
+
+                // Wipes EXIF metadata by rendering to a new canvas element
+                const xCanvas = document.createElement('canvas');
+                xCanvas.width = targetW;
+                xCanvas.height = targetH;
+                const xCtx = xCanvas.getContext('2d');
+                xCtx.drawImage(state.image, 0, 0, targetW, targetH);
+
+                // Apply adaptive dither noise to flat areas
+                if (noiseIntensity > 0) {
+                    const imgData = xCtx.getImageData(0, 0, targetW, targetH);
+                    const data = imgData.data;
+                    const threshold = 12;
+                    for (let y = 1; y < targetH - 1; y += 2) {
+                        for (let x = 1; x < targetW - 1; x += 2) {
+                            const idx = (y * targetW + x) * 4;
+                            const rightIdx = idx + 4;
+                            const bottomIdx = idx + (targetW * 4);
+
+                            const rDiff = Math.abs(data[idx] - data[rightIdx]) + Math.abs(data[idx] - data[bottomIdx]);
+                            const gDiff = Math.abs(data[idx+1] - data[rightIdx+1]) + Math.abs(data[idx+1] - data[bottomIdx+1]);
+                            const bDiff = Math.abs(data[idx+2] - data[rightIdx+2]) + Math.abs(data[idx+2] - data[bottomIdx+2]);
+
+                            if (rDiff < threshold && gDiff < threshold && bDiff < threshold) {
+                                const blockIndices = [idx, idx + 4, idx + (targetW * 4), idx + (targetW * 4) + 4];
+                                blockIndices.forEach(pIdx => {
+                                    if (pIdx < data.length) {
+                                        const noise = (Math.random() - 0.5) * noiseIntensity * 2;
+                                        let r = data[pIdx] + noise;
+                                        let g = data[pIdx+1] + noise;
+                                        let b = data[pIdx+2] + noise;
+
+                                        // Saturation compensation: Y + S * (C - Y)
+                                        const y = 0.299 * r + 0.587 * g + 0.114 * b;
+                                        const satBoost = 1.0 + (noiseIntensity * 0.004); 
+
+                                        data[pIdx]   = Math.max(0, Math.min(255, y + satBoost * (r - y)));
+                                        data[pIdx+1] = Math.max(0, Math.min(255, y + satBoost * (g - y)));
+                                        data[pIdx+2] = Math.max(0, Math.min(255, y + satBoost * (b - y)));
+                                    }
+                                });
+                            }
+                        }
+                    }
+                    xCtx.putImageData(imgData, 0, 0);
+                }
+
+                // Write out Blob
+                let finalBlob = null;
+                if (outputFormat === 'image/png') {
+                    finalBlob = await new Promise(resolve => xCanvas.toBlob(resolve, 'image/png'));
+                } else {
+                    const targetLimit = 5 * 1024 * 1024; // 5MB limit
+                    let low = 0.90;
+                    let high = 0.97;
+                    let bestQuality = 0.97;
+                    let bestBlob = null;
+
+                    for (let i = 0; i < 4; i++) {
+                        const mid = (low + high) / 2;
+                        const blob = await new Promise(resolve => xCanvas.toBlob(resolve, 'image/jpeg', mid));
+                        if (blob.size <= targetLimit) {
+                            bestQuality = mid;
+                            bestBlob = blob;
+                            low = mid;
+                        } else {
+                            high = mid;
+                        }
+                    }
+                    if (!bestBlob) {
+                        bestBlob = await new Promise(resolve => xCanvas.toBlob(resolve, 'image/jpeg', 0.90));
+                    }
+                    finalBlob = bestBlob;
+                }
+
+                const url = URL.createObjectURL(finalBlob);
+                const formatLabel = outputFormat === 'image/png' ? 'X (PNG)' : 'X (JPEG)';
+                return {
+                    url: url,
+                    size: finalBlob.size,
+                    label: `${formatLabel} (${targetW}x${targetH})`
+                };
+            }
+
+            const w = state.image.width;
+            const h = state.image.height;
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(state.image, 0, 0);
+
+            // Parse format and bit depth
+            let format = unifiedFormat;
+            let depth = 8;
+            if (unifiedFormat.startsWith('png-')) {
+                format = 'image/png';
+                depth = parseInt(unifiedFormat.split('-')[1]);
+            }
+
+            if (format === 'mozjpeg' || format === 'image/avif') {
+                showLoadingIndicator(true);
+                try {
+                    const rawData = ctx.getImageData(0, 0, w, h);
+                    let compressedBuffer;
+                    
+                    if (format === 'mozjpeg') {
+                        await initJpegWasm();
+                        compressedBuffer = await jpegModule.default(rawData, { quality });
+                    } else if (format === 'image/avif') {
+                        await initAvifWasm();
+                        compressedBuffer = await avifModule.default(rawData, { quality, bitDepth: 8 });
+                    }
+                    
+                    const mimeType = format === 'mozjpeg' ? 'image/jpeg' : 'image/avif';
+                    const blob = new Blob([compressedBuffer], { type: mimeType });
+                    const url = URL.createObjectURL(blob);
+                    const nameLabel = format === 'mozjpeg' ? `MozJPEG (Q: ${quality})` : `AVIF (8-bit, Q: ${quality})`;
+                    
+                    showLoadingIndicator(false);
+                    return {
+                        url: url,
+                        size: blob.size,
+                        label: nameLabel
+                    };
+                } catch (err) {
+                    showLoadingIndicator(false);
+                    throw err;
+                }
+            }
+
+            return new Promise((resolve, reject) => {
+                let targetFormat = format;
+                let nameLabel = '';
+
+                if (format === 'image/webp') {
+                    nameLabel = `WebP (Q: ${quality})`;
+                } else if (format === 'image/jpeg') {
+                    nameLabel = `JPEG (Q: ${quality})`;
+                } else if (format === 'image/png') {
+                    applyColorReduction(ctx, w, h, depth);
+                    nameLabel = `PNG (${depth}-bit)`;
+                }
+
+                try {
+                    const qParam = (targetFormat === 'image/png') ? undefined : (quality / 100);
+                    canvas.toBlob((blob) => {
+                        if (!blob) {
+                            reject(new Error(`このブラウザは ${format.toUpperCase()} のエンコードをサポートしていません。`));
+                            return;
+                        }
+                        
+                        // Check if browser silently fell back to PNG (indicating format is unsupported)
+                        if (targetFormat !== 'image/png' && blob.type === 'image/png') {
+                            reject(new Error(`お使いのブラウザは ${format.toUpperCase()} 形式でのエンコードをサポートしていません（PNGにフォールバックされました）。`));
+                            return;
+                        }
+                        
+                        const url = URL.createObjectURL(blob);
+                        resolve({
+                            url: url,
+                            size: blob.size,
+                            label: nameLabel
+                        });
+                    }, targetFormat, qParam);
+                } catch (e) {
+                    reject(e);
+                }
+            });
+        }
+
+        // Draw helper (Scales resized images up to the original size without interpolation/nearest-neighbor)
+        function drawToCanvas(canvas, img) {
+            const w = state.image ? state.image.width : img.width;
+            const h = state.image ? state.image.height : img.height;
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, w, h);
+            if (img.width !== w || img.height !== h) {
+                ctx.imageSmoothingEnabled = false; // Nearest-neighbor (no interpolation)
+                ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, w, h);
+            } else {
+                ctx.drawImage(img, 0, 0);
+            }
+        }
+
+        // Helper to retrieve pixel array from an Image element
+        function getPixelsFromImage(img) {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = img.width;
+            tempCanvas.height = img.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(img, 0, 0);
+            return tempCtx.getImageData(0, 0, img.width, img.height).data;
+        }
+
+        // Extract format name from type or extension
+        function getFileFormatName(file) {
+            if (!file) return '不明';
+            const type = file.type;
+            if (type) {
+                return type.split('/')[1].toUpperCase();
+            }
+            const ext = file.name.split('.').pop().toUpperCase();
+            return ext || '不明';
+        }
+
+        function addLogEntry(paneName, formatLabel, size, duration, psnr, rmse) {
+            const placeholder = document.getElementById('logPlaceholder');
+            if (placeholder) {
+                placeholder.remove();
+            }
+
+            const timeStr = new Date().toLocaleTimeString();
+            const logDiv = document.createElement('div');
+            logDiv.style.borderBottom = '1px solid rgba(255, 255, 255, 0.05)';
+            logDiv.style.paddingBottom = '6px';
+            logDiv.style.marginBottom = '6px';
+            logDiv.innerHTML = `
+                <div style="display: flex; justify-content: space-between; font-weight: 500; color: var(--text-primary);">
+                    <span>[${timeStr}] ${paneName}</span>
+                    <span style="color: var(--accent-color); font-weight: 600;">${formatBytes(size)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.7rem; margin-top: 2px;">
+                    <span>${formatLabel}</span>
+                    <span>処理時間: ${Math.round(duration)}ms</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--success-color); margin-top: 2px;">
+                    <span>PSNR: ${psnr === Infinity ? '∞' : psnr.toFixed(2) + ' dB'}</span>
+                    <span>RMSE: ${rmse.toFixed(3)}</span>
+                </div>
+            `;
+            
+            encodeLogContainer.insertBefore(logDiv, encodeLogContainer.firstChild);
+        }
+
+        // 3. Engine - Compression Comparison
+        async function processCompare(shouldLog = false) {
+            if (!state.image) return;
+
+            try {
+                showError('');
+                cleanupUrls();
+
+                const originalFormat = getFileFormatName(state.originalFile);
+                labelSizeOriginal.textContent = `入力ファイル (${originalFormat})`;
+
+                // Raw Bitmap Size display
+                const rawBytes = state.image.width * state.image.height * 4;
+                const getRatio = (sz) => {
+                    const pct = (sz / rawBytes * 100).toFixed(2);
+                    return ` (${pct}%)`;
+                };
+
+                sizeRaw.textContent = formatBytes(rawBytes);
+                sizeOriginal.textContent = formatBytes(state.originalFile.size) + getRatio(state.originalFile.size);
+
+                // Right Panel B
+                const formatValB = formatB.value;
+                const qualityValB = parseInt(numQualityB.value);
+
+                loaderRight.style.display = 'flex';
+                const startTimeB = performance.now();
+                const resB = await encodeImage(formatValB, qualityValB, false);
+                const durationB = performance.now() - startTimeB;
+                state.rightBlobUrl = resB.url;
+
+                let resA = null;
+                let durationA = 0;
+                let leftPrec = null;
+                let rightPrec = null;
+
+                // Left Panel (Original or A)
+                if (state.mode === 'A') {
+                    // Draw original input image on Left
+                    drawToCanvas(canvasLeft, state.image);
+                    loaderLeft.style.display = 'none';
+                    const labelStr = `入力ファイル (${originalFormat})`;
+                    sizeLeft.textContent = formatBytes(state.originalFile.size) + getRatio(state.originalFile.size);
+                    headerSubLeft.textContent = `${labelStr} - ${formatBytes(state.originalFile.size)}`;
+                    labelSizeLeft.textContent = `左画面 (入力ファイル)`;
+
+                    // Left is original, so precision data is original
+                    const origCtx = canvasLeft.getContext('2d');
+                    const origData = origCtx.getImageData(0, 0, state.image.width, state.image.height).data;
+                    leftPrec = new Float32Array(origData.length);
+                    for (let i = 0; i < origData.length; i++) {
+                        leftPrec[i] = origData[i];
+                    }
+                } else {
+                    const formatValA = formatA.value;
+                    const qualityValA = parseInt(numQualityA.value);
+
+                    loaderLeft.style.display = 'flex';
+                    const startTimeA = performance.now();
+                    resA = await encodeImage(formatValA, qualityValA, true);
+                    durationA = performance.now() - startTimeA;
+                    state.leftBlobUrl = resA.url;
+
+                    // Load left blob into Left Canvas
+                    await new Promise((resolve, reject) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            try {
+                                drawToCanvas(canvasLeft, img);
+                                // Get precision data using bicubic scaling from the small image
+                                const smallData = getPixelsFromImage(img);
+                                leftPrec = resizeBicubic(smallData, img.width, img.height, state.image.width, state.image.height);
+                                loaderLeft.style.display = 'none';
+                                resolve();
+                            } catch (e) {
+                                loaderLeft.style.display = 'none';
+                                reject(e);
+                            }
+                        };
+                        img.onerror = () => {
+                            loaderLeft.style.display = 'none';
+                            reject(new Error("左画面のデコードに失敗しました。"));
+                        };
+                        img.src = state.leftBlobUrl;
+                    });
+                    sizeLeft.textContent = formatBytes(resA.size) + getRatio(resA.size);
+                    headerSubLeft.textContent = `${resA.label} - ${formatBytes(resA.size)}`;
+                    labelSizeLeft.textContent = `左画面 (条件A)`;
+                }
+
+                // Load right blob into Right Canvas
+                await new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        try {
+                            drawToCanvas(canvasRight, img);
+                            // Get precision data using bicubic scaling from the small image
+                            const smallData = getPixelsFromImage(img);
+                            rightPrec = resizeBicubic(smallData, img.width, img.height, state.image.width, state.image.height);
+                            loaderRight.style.display = 'none';
+                            resolve();
+                        } catch (e) {
+                            loaderRight.style.display = 'none';
+                            reject(e);
+                        }
+                    };
+                    img.onerror = () => {
+                        loaderRight.style.display = 'none';
+                        reject(new Error("右画面のデコードに失敗しました。"));
+                    };
+                    img.src = state.rightBlobUrl;
+                });
+                sizeRight.textContent = formatBytes(resB.size) + getRatio(resB.size);
+                headerSubRight.textContent = `${resB.label} - ${formatBytes(resB.size)}`;
+
+                // Update Diff Maps & Styles
+                const diffMetrics = updateDifferenceMap(leftPrec, rightPrec);
+                updateOverlayStyles();
+
+                // Dynamic Download / Copy buttons configuration
+                btnDownloadLeft.style.display = 'flex';
+                btnDownloadRight.style.display = 'flex';
+                btnPostXLeft.style.display = 'flex';
+                btnPostXRight.style.display = 'flex';
+                if (state.mode === 'A') {
+                    btnDownloadLeft.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>ダウンロード (元画像)</span>`;
+                } else {
+                    btnDownloadLeft.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>ダウンロード (条件A)</span>`;
+                }
+                btnDownloadRight.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>ダウンロード (条件B)</span>`;
+
+                // Encode Logging if requested
+                if (shouldLog) {
+                    addLogEntry(state.mode === 'A' ? '右画面 (条件B)' : '条件B (右画面)', resB.label, resB.size, durationB, diffMetrics.psnr, diffMetrics.rmse);
+                    if (state.mode === 'B' && resA) {
+                        addLogEntry('条件A (左画面)', resA.label, resA.size, durationA, diffMetrics.psnr, diffMetrics.rmse);
+                    }
+                }
+
+            } catch (err) {
+                // Ensure loaders are hidden on error
+                loaderLeft.style.display = 'none';
+                loaderRight.style.display = 'none';
+                showError('画像の処理中にエラーが発生しました: ' + err.message);
+            }
+        }
+
+        // 4. Engine - Difference Calculation
+        function updateDifferenceMap(leftPrecData, rightPrecData) {
+            if (!state.image) return { psnr: Infinity, rmse: 0 };
+
+            const w = state.image.width;
+            const h = state.image.height;
+
+            const dl = leftPrecData || getPrecisionData(canvasLeft, null, state.mode === 'A');
+            const dr = rightPrecData || getPrecisionData(canvasRight, null, false);
+
+            // Create Diff imageData
+            const diffData = new ImageData(w, h);
+            const dd = diffData.data;
+
+            const amp = state.diffAmp;
+            let mseSum = 0;
+
+            for (let i = 0; i < dl.length; i += 4) {
+                // Absolute RGB diffs
+                const rDiff = dl[i] - dr[i];
+                const gDiff = dl[i+1] - dr[i+1];
+                const bDiff = dl[i+2] - dr[i+2];
+                mseSum += rDiff * rDiff + gDiff * gDiff + bDiff * bDiff;
+
+                const absR = Math.abs(rDiff);
+                const absG = Math.abs(gDiff);
+                const absB = Math.abs(bDiff);
+
+                // Highlight differences (R/W glow effect)
+                const val = Math.min(255, (absR + absG + absB) / 3 * amp);
+                dd[i] = val;         // R
+                dd[i+1] = 0;       // G
+                dd[i+2] = val * 0.5; // B
+                dd[i+3] = 255;       // A (fully opaque)
+            }
+
+            const numPixels = w * h;
+            const mse = mseSum / (numPixels * 3);
+            const rmse = Math.sqrt(mse);
+            const psnr = mse === 0 ? Infinity : 20 * Math.log10(255 / rmse);
+
+            valPSNR.textContent = psnr === Infinity ? '∞ (完全一致)' : psnr.toFixed(2) + ' dB';
+            valRMSE.textContent = rmse.toFixed(3);
+
+            // A. Draw to minimap canvas (preserving aspect ratio)
+            const minW = diffMinimap.width;
+            const minH = diffMinimap.height;
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = w;
+            tempCanvas.height = h;
+            tempCanvas.getContext('2d').putImageData(diffData, 0, 0);
+
+            const ctxMinimap = diffMinimap.getContext('2d');
+            ctxMinimap.fillStyle = '#000000';
+            ctxMinimap.fillRect(0, 0, minW, minH);
+
+            const aspect = w / h;
+            let targetW = minW;
+            let targetH = minH;
+            if (minW / minH > aspect) {
+                targetW = minH * aspect;
+            } else {
+                targetH = minW / aspect;
+            }
+            const targetX = (minW - targetW) / 2;
+            const targetY = (minH - targetH) / 2;
+
+            ctxMinimap.drawImage(tempCanvas, targetX, targetY, targetW, targetH);
+
+            // B. Draw to main overlays if enabled
+            if (state.diffOverlay) {
+                [
+                    { overlay: overlayLeft, renderCanvas: canvasLeft },
+                    { overlay: overlayRight, renderCanvas: canvasRight }
+                ].forEach(({ overlay, renderCanvas }) => {
+                    const ow = renderCanvas.width;
+                    const oh = renderCanvas.height;
+                    overlay.width = ow;
+                    overlay.height = oh;
+                    const ctxOverlay = overlay.getContext('2d');
+                    ctxOverlay.clearRect(0, 0, ow, oh);
+                    ctxOverlay.drawImage(tempCanvas, 0, 0, ow, oh);
+                });
+            }
+
+            return { psnr, rmse };
+        }
+
+        // 5. User Interaction / Synchronized Pan & Zoom
+        function setupLayoutSync() {
+            const containers = [containerLeft, containerRight];
+
+            containers.forEach((container) => {
+                container.addEventListener('mousedown', (e) => {
+                    if (!state.image) return;
+                    state.isDragging = true;
+                    state.startX = e.clientX - state.panX;
+                    state.startY = e.clientY - state.panY;
+                });
+
+                container.addEventListener('mousemove', (e) => {
+                    if (!state.isDragging) return;
+                    state.panX = e.clientX - state.startX;
+                    state.panY = e.clientY - state.startY;
+                    applyTransforms();
+                });
+
+                container.addEventListener('wheel', (e) => {
+                    if (!state.image) return;
+                    e.preventDefault();
+
+                    const zoomFactor = 1.1;
+                    const oldScale = state.scale;
+                    
+                    if (e.deltaY < 0) {
+                        state.scale = Math.min(state.scale * zoomFactor, 50); // limit zoom
+                    } else {
+                        state.scale = Math.max(state.scale / zoomFactor, 0.1);
+                    }
+
+                    // Mouse-relative zoom calculation
+                    const rect = container.getBoundingClientRect();
+                    const mouseX = e.clientX - rect.left - rect.width / 2;
+                    const mouseY = e.clientY - rect.top - rect.height / 2;
+
+                    state.panX = mouseX - (mouseX - state.panX) * (state.scale / oldScale);
+                    state.panY = mouseY - (mouseY - state.panY) * (state.scale / oldScale);
+
+                    applyTransforms();
+                }, { passive: false });
+            });
+
+            window.addEventListener('mouseup', () => {
+                state.isDragging = false;
+            });
+
+            // Window resize handler to maintain position
+            window.addEventListener('resize', () => {
+                if (state.image) {
+                    applyTransforms();
+                }
+            });
+        }
+
+        function applyTransforms() {
+            const transStr = `translate(calc(-50% + ${state.panX}px), calc(-50% + ${state.panY}px)) scale(${state.scale})`;
+            [canvasLeft, canvasRight, overlayLeft, overlayRight].forEach(el => {
+                if (el) el.style.transform = transStr;
+            });
+        }
+        
+        async function triggerDownload(blobUrl) {
+            if (!blobUrl) return;
+            try {
+                const response = await fetch(blobUrl);
+                const blob = await response.blob();
+                const mime = blob.type;
+                let ext = 'jpg';
+                if (mime === 'image/png') ext = 'png';
+                else if (mime === 'image/webp') ext = 'webp';
+                else if (mime === 'image/avif') ext = 'avif';
+                
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = blobUrl;
+                a.download = `download_${Date.now()}.${ext}`;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                }, 100);
+            } catch (e) {
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = blobUrl;
+                a.download = `download_${Date.now()}.jpg`;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                }, 100);
+            }
+        }
+
+        btnDownloadLeft.addEventListener('click', () => {
+            if (state.mode === 'A') {
+                const url = URL.createObjectURL(state.originalFile);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = state.originalFile.name;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 100);
+            } else {
+                triggerDownload(state.leftBlobUrl);
+            }
+        });
+
+        btnDownloadRight.addEventListener('click', () => {
+            triggerDownload(state.rightBlobUrl);
+        });
+
+        async function copyImageToClipboard(blobUrl) {
+            if (!blobUrl) return;
+            const btn = event.currentTarget;
+            const originalHTML = btn.innerHTML;
+            try {
+                btn.disabled = true;
+                btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: middle;"><polyline points="20 6 9 17 4 12"/></svg><span>コピー中...</span>`;
+
+                const response = await fetch(blobUrl);
+                const blob = await response.blob();
+
+                // Clipboard API requires image/png
+                let pngBlob = blob;
+                if (blob.type !== 'image/png') {
+                    const img = await new Promise((resolve, reject) => {
+                        const i = new Image();
+                        i.onload = () => resolve(i);
+                        i.onerror = reject;
+                        i.src = URL.createObjectURL(blob);
+                    });
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = img.width;
+                    tempCanvas.height = img.height;
+                    tempCanvas.getContext('2d').drawImage(img, 0, 0);
+                    URL.revokeObjectURL(img.src);
+                    pngBlob = await new Promise(resolve => tempCanvas.toBlob(resolve, 'image/png'));
+                }
+
+                await navigator.clipboard.write([
+                    new ClipboardItem({ 'image/png': pngBlob })
+                ]);
+
+                // Show success state
+                btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: middle;"><polyline points="20 6 9 17 4 12"/></svg><span>コピー済み！</span>`;
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                    btn.disabled = false;
+                }, 2000);
+            } catch (err) {
+                console.error(err);
+                btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: middle;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>コピー失敗</span>`;
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                    btn.disabled = false;
+                }, 2500);
+                showError('クリップボードへのコピーに失敗しました。ブラウザの権限設定を確認してください。');
+            }
+        }
+
+        btnPostXLeft.addEventListener('click', function() {
+            const url = (state.mode === 'A') ? URL.createObjectURL(state.originalFile) : state.leftBlobUrl;
+            if (!url) return;
+            copyImageToClipboard.call(this, url).then(() => {
+                if (state.mode === 'A') URL.revokeObjectURL(url);
+            });
+        });
+
+        btnPostXRight.addEventListener('click', function() {
+            copyImageToClipboard.call(this, state.rightBlobUrl);
+        });
+
+        // Expose functions for window compatibility if needed
+        window.handleFile = handleFile;
+        window.processCompare = processCompare;
+    </script>
+</body>
+</html>

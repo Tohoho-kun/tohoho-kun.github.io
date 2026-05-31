@@ -90,6 +90,40 @@
                             <p data-i18n="symbol_app_desc">記号と文字を組み合わせて、オリジナルのアイコンを簡単に作成・コピーできるツール。</p>
                         </div>
                     </div>
+
+                    <!-- App Card: Weld-Blade -->
+                    <div class="app-card" onclick="window.location.hash='#weld'">
+                        <div class="app-card-icon">
+                            <i class="fa-solid fa-scissors"></i>
+                        </div>
+                        <div class="app-card-content">
+                            <h3 data-i18n="weld_app_title">Macro measurement of weld cross section</h3>
+                            <p data-i18n="weld_app_desc">4K画像対応。爆速ですみ肉溶接の脚長・のど厚を計測・保存できるツール。</p>
+                        </div>
+                    </div>
+                    <!-- App Card: Image Compression Compare -->
+                    <div class="app-card" onclick="window.open('image-compression-compare.html', '_blank')">
+                        <div class="app-card-icon">
+                            <i class="fa-solid fa-images"></i>
+                        </div>
+                        <div class="app-card-content">
+                            <h3 data-i18n="imgcmp_app_title">圧縮フォーマット比較ツール</h3>
+                            <p data-i18n="imgcmp_app_desc">WebP / AVIF / JPEG / PNG などの画質・ファイルサイズを並べて比較。PSNR・RMSE・差分マップで客観評価。</p>
+                            <span style="font-size:0.7rem; color: var(--text-secondary); margin-top:4px; display:block;">↗ 別タブで開く</span>
+                        </div>
+                    </div>
+
+                    <!-- App Card: X Compression Defense -->
+                    <div class="app-card" onclick="window.open('x-compression-defense.html', '_blank')">
+                        <div class="app-card-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                        </div>
+                        <div class="app-card-content">
+                            <h3 data-i18n="xenc_app_title">X投稿専用 画質絶対防衛エンコーダー</h3>
+                            <p data-i18n="xenc_app_desc">X(Twitter)の画質圧縮を回避。漸変ノイズでフラット領域を保護し、「画質絶対防衛」を実現するエンコーダー。</p>
+                            <span style="font-size:0.7rem; color: var(--text-secondary); margin-top:4px; display:block;">↗ 別タブで開く</span>
+                        </div>
+                    </div>
                 </div>
             </div>
     </template>
@@ -647,10 +681,247 @@
         </div>
     </template>
 
+    <!-- Weld-Blade Template -->
+    <template id="view-weld">
+        <div class="container x-large fade-in">
+            <div class="page-header flex-header">
+                <div>
+                    <button class="back-link" onclick="window.location.hash='#home'"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="back_home">ホームへ戻る</span></button>
+                    <h1 data-i18n="weld_title">溶接断面計測 Weld-Blade</h1>
+                </div>
+                <div id="opencv-status" class="status-badge"><i class="fa-solid fa-circle-notch fa-spin"></i> OpenCV.js Initializing...</div>
+            </div>
+
+            <div class="layout-grid weld-layout">
+                <!-- Left: Controls -->
+                <aside class="control-panel panel weld-controls">
+                    <!-- Main Tabs -->
+                    <div class="gdt-mode-btns mb-4" style="display:flex; gap:4px;">
+                        <button id="weld-tab-meas" class="btn small active" style="flex:1;" data-i18n="weld_tab_meas">測定</button>
+                        <button id="weld-tab-calib" class="btn small" style="flex:1;" data-i18n="weld_tab_calib">キャリブレーション</button>
+                    </div>
+
+                    <!-- Measurement Panel Content -->
+                    <div id="weld-panel-meas">
+                        <div class="control-group">
+                            <label class="group-label"><i class="fa-solid fa-route"></i> <span data-i18n="weld_workflow">ワークフロー</span></label>
+                            <div class="gdt-mode-btns" style="display:flex; gap:4px;">
+                                <button id="weld-workflow-step" class="btn small active" style="flex:1;" data-i18n="weld_step_mode">手順</button>
+                                <button id="weld-workflow-free" class="btn small" style="flex:1;" data-i18n="weld_free_mode">自由</button>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- Free Mode Toolbar (Visible only in Free workflow) -->
+                        <div id="weld-free-tools-container" style="display: none;">
+                            <div class="control-group">
+                                <label class="group-label"><i class="fa-solid fa-pen-ruler"></i> <span data-i18n="weld_free_tools">自由モードツール</span></label>
+                                <div class="gdt-mode-btns" style="display:flex; gap:4px; flex-wrap: wrap;">
+                                    <button id="weld-tool-measure" class="btn small active" style="flex:1;" data-i18n="weld_tool_meas">測定線</button>
+                                    <button id="weld-tool-crosshair" class="btn small" style="flex:1;" data-i18n="weld_tool_cross">十字線</button>
+                                    <button id="weld-tool-line" class="btn small" style="flex:1;" data-i18n="weld_tool_line">直線</button>
+                                </div>
+                                <small class="text-muted mt-2" style="display:block; font-size: 0.8rem;" data-i18n="weld_shift_snap">
+                                    ※ Shiftキーを押しながら描画で15度スナップ
+                                </small>
+                                <div style="margin-top: 12px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 8px;">
+                                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:0.85rem; user-select:none;">
+                                        <input type="checkbox" id="weld-show-step-layer" checked>
+                                        <span data-i18n="weld_show_step_layer">手順モードの計測結果を表示</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- Free Mode Data Table -->
+                            <div class="control-group mt-3">
+                                <label class="group-label"><i class="fa-solid fa-list"></i> <span data-i18n="weld_draw_list">描画リスト</span></label>
+                                <div class="weld-table-container">
+                                    <table id="weld-free-table" class="weld-data-table">
+                                        <thead>
+                                            <tr>
+                                                <th data-i18n="weld_th_type">種類</th>
+                                                <th data-i18n="weld_th_length">長さ(mm)</th>
+                                                <th data-i18n="weld_th_angle">角度(°)</th>
+                                                <th data-i18n="weld_th_action">操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Dynamically populated -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="control-group">
+                            <label class="group-label"><i class="fa-solid fa-file-image"></i> <span data-i18n="image_input">画像追加</span></label>
+                            <input type="file" id="weld-image-input" accept="image/*" class="custom-file-input" multiple>
+                        </div>
+
+                        <hr>
+
+                        <!-- Image adjustment always visible -->
+                        <div class="control-group" id="weld-adjust-panel">
+                            <label class="group-label"><i class="fa-solid fa-wand-magic-sparkles"></i> <span data-i18n="image_adjustment">画像調整</span></label>
+                            <div class="slider-control">
+                                <label data-i18n="brightness">明るさ</label>
+                                <input type="range" id="weld-brightness" min="-100" max="100" value="0">
+                            </div>
+                            <div class="slider-control">
+                                <label data-i18n="contrast">コントラスト</label>
+                                <input type="range" id="weld-contrast" min="-100" max="100" value="0">
+                            </div>
+                            <div class="slider-control">
+                                <label data-i18n="unsharp_mask">アンシャープマスク (強さ)</label>
+                                <input type="range" id="weld-unsharp" min="0" max="200" value="0">
+                            </div>
+
+                            <button id="weld-rotate-mode-btn" class="btn secondary full-width mt-2">
+                                <i class="fa-solid fa-rotate"></i> <span data-i18n="rotation_fix">回転補正 (2点指定)</span>
+                            </button>
+                        </div>
+
+                        <hr>
+
+                        <!-- Step indicator (step mode only) -->
+                        <div id="weld-step-container">
+                            <div id="weld-step-indicator" class="step-indicator">
+                                <div class="step" data-step="1" data-i18n="weld_step_1">1: 補正</div>
+                                <div class="step" data-step="2" data-i18n="weld_step_2">2: 外形</div>
+                                <div class="step" data-step="3" data-i18n="weld_step_3">3: 起点</div>
+                                <div class="step" data-step="4" data-i18n="weld_step_4">4: 測定</div>
+                            </div>
+                        </div>
+
+                        <div id="weld-nav-btns" class="flex-between mt-4">
+                            <button id="weld-prev-btn" class="btn secondary" style="flex:1; margin-right:5px;"><i class="fa-solid fa-chevron-left"></i> <span data-i18n="weld_prev">戻る</span></button>
+                            <button id="weld-next-btn" class="btn primary" style="flex:1; margin-left:5px;"><span data-i18n="weld_next">次へ</span> <i class="fa-solid fa-chevron-right"></i></button>
+                        </div>
+
+                        <hr>
+
+                        <div class="control-group">
+                            <label class="group-label"><i class="fa-solid fa-database"></i> <span data-i18n="attributes">属性入力</span></label>
+                            <input type="date" id="weld-attr-date" class="mb-2">
+                            <input type="text" id="weld-attr-product" placeholder="製品名" data-i18n-placeholder="weld_attr_product" list="weld-product-history" class="mb-2">
+                            <datalist id="weld-product-history"></datalist>
+                            <input type="text" id="weld-attr-jig" placeholder="治具No" data-i18n-placeholder="weld_attr_jig" list="weld-jig-history" class="mb-2">
+                            <datalist id="weld-jig-history"></datalist>
+                            <input type="text" id="weld-attr-shift" placeholder="直シフト (例: 早番)" data-i18n-placeholder="weld_attr_shift" list="weld-shift-history" class="mb-2">
+                            <datalist id="weld-shift-history"></datalist>
+                            <input type="text" id="weld-attr-timing" placeholder="測定タイミング (例: 始業前)" data-i18n-placeholder="weld_attr_timing" list="weld-timing-history" class="mb-2">
+                            <datalist id="weld-timing-history"></datalist>
+                        </div>
+
+                        <div class="control-group mt-2">
+                            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:0.85rem;">
+                                <input type="checkbox" id="weld-crop-option">
+                                <span data-i18n="weld_crop_save">外形範囲でクロップして保存</span>
+                            </label>
+                        </div>
+
+                        <button id="weld-save-btn" class="btn primary full-width mt-4">
+                            <i class="fa-solid fa-download"></i> <span data-i18n="export_4k">画像保存</span>
+                        </button>
+                        <button id="weld-reset-btn" class="btn secondary full-width mt-2">
+                            <i class="fa-solid fa-undo"></i> <span data-i18n="reset_meas">計測リセット</span>
+                        </button>
+                    </div>
+
+                    <!-- Calibration Panel Content -->
+                    <div id="weld-panel-calib" style="display:none;">
+                        <div class="control-group">
+                            <label class="group-label"><i class="fa-solid fa-file-image"></i> <span data-i18n="weld_calib_img_add">キャリブレーション画像追加</span></label>
+                            <input type="file" id="weld-calib-image-input" accept="image/*" class="custom-file-input">
+                        </div>
+
+                        <hr>
+
+                        <div class="control-group">
+                            <label class="group-label"><i class="fa-solid fa-ruler-combined"></i> <span data-i18n="weld_calib_settings">キャリブレーション設定</span></label>
+                            <p style="font-size:0.75rem; color: var(--text-muted); margin-bottom: 1rem;" data-i18n="weld_calib_inst">画像上の2点間をクリックして指定し、その実距離を入力してください。</p>
+                            
+                            <div class="stat-card mb-4" style="background: rgba(0,0,0,0.2);">
+                                <div class="stat-title" data-i18n="weld_calib_px_select">選択範囲のピクセル数</div>
+                                <div id="weld-calib-px-display" class="stat-value" style="font-size: 1.5rem;">0.0 px</div>
+                            </div>
+
+                            <div class="control-group">
+                                <label for="weld-calib-real-len" data-i18n="weld_calib_real_len">実距離 (mm)</label>
+                                <div class="flex-between">
+                                    <input type="number" id="weld-calib-real-len" placeholder="実長を入力" data-i18n-placeholder="weld_calib_real_ph" step="0.5" style="flex:1; margin-right: 10px;">
+                                    <span style="font-weight:bold;">mm</span>
+                                </div>
+                            </div>
+
+                            <button id="weld-calib-apply-btn" class="btn primary full-width mt-4">
+                                <i class="fa-solid fa-check"></i> <span data-i18n="weld_calib_apply">スケールを適用</span>
+                            </button>
+                        </div>
+
+                        <hr>
+                        <div class="panel" style="background: rgba(59, 130, 246, 0.05); font-size: 0.8rem;">
+                            <p><i class="fa-solid fa-circle-info"></i> <span data-i18n="weld_current_scale">現在のスケール:</span></p>
+                            <p id="weld-current-scale-text" style="font-family: var(--font-mono); font-weight: bold; margin-top: 5px;" data-i18n="weld_scale_unset">未設定</p>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Right: Canvas Area -->
+                <div class="main-content weld-main">
+                    <div class="weld-canvas-toolbar">
+                        <button id="weld-zoom-in" class="btn small" title="拡大" data-i18n-title="weld_zoom_in"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                        <button id="weld-zoom-out" class="btn small" title="縮小" data-i18n-title="weld_zoom_out"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                        <button id="weld-zoom-fit" class="btn small" title="フィット" data-i18n-title="weld_zoom_fit"><i class="fa-solid fa-expand"></i></button>
+                        <button id="weld-zoom-100" class="btn small" title="等倍" data-i18n-title="weld_zoom_100">1:1</button>
+                        <div style="width:1px; height:20px; background:rgba(255,255,255,0.2); margin:0 4px;"></div>
+                        <button id="weld-pan-btn" class="btn small" title="パン（ドラッグで移動）" data-i18n-title="weld_pan"><i class="fa-solid fa-hand"></i></button>
+                    </div>
+                    <div class="canvas-wrapper panel" id="weld-canvas-container">
+                        <canvas id="weld-canvas-bg"></canvas>
+                        <canvas id="weld-canvas-ui"></canvas>
+                        <div id="weld-crosshair" class="weld-crosshair"></div>
+                    </div>
+                    <!-- Step Mode Real-time Results Table -->
+                    <div id="weld-step-results-container" class="panel mt-3" style="display: none; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 6px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);">
+                        <div style="font-size: 0.9rem; font-weight: bold; color: #22d3ee; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-square-poll-vertical"></i> <span data-i18n="weld_step_results_title">手順モード測定結果</span>
+                        </div>
+                        <div style="display: flex; gap: 24px; flex-wrap: wrap; font-size: 0.85rem; font-family: var(--font-mono);">
+                            <div id="weld-result-item-l1" style="display:none;"><span style="color:var(--text-muted);">L1 (上):</span> <span class="value" style="font-weight:bold; color:#22d3ee;">-</span></div>
+                            <div id="weld-result-item-l2" style="display:none;"><span style="color:var(--text-muted);">L2 (下):</span> <span class="value" style="font-weight:bold; color:#fb923c;">-</span></div>
+                            <div id="weld-result-item-l3" style="display:none;"><span style="color:var(--text-muted);">L3 (左):</span> <span class="value" style="font-weight:bold; color:#34d399;">-</span></div>
+                            <div id="weld-result-item-l4" style="display:none;"><span style="color:var(--text-muted);">L4 (右):</span> <span class="value" style="font-weight:bold; color:#818cf8;">-</span></div>
+                            <div id="weld-result-item-throat" style="display:none;"><span style="color:var(--text-muted);">のど厚 (T):</span> <span class="value" style="font-weight:bold; color:#facc15;">-</span></div>
+                        </div>
+                    </div>
+                    <!-- Step Mode Help Guide (Real Screenshot Example) -->
+                    <div id="weld-step-guide-image-container" class="panel mt-3" style="display: none; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 6px; text-align: center;">
+                        <div style="font-size: 0.9rem; font-weight: bold; color: #34d399; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; text-align: left;">
+                            <i class="fa-solid fa-image"></i> <span data-i18n="weld_guide_example_title">測定手順の参考例</span>
+                        </div>
+                        <img id="weld-step-guide-img" src="" alt="Measurement Example Guide" style="max-height: 220px; width: auto; border-radius: 4px; border: 1px solid rgba(255,255,255,0.15); background: #111;">
+                    </div>
+                    <div id="weld-guide" class="weld-guide" data-i18n="weld_guide_init">画像を読み込んでください。</div>
+                    <div class="weld-shortcut-legend">
+                        <span data-i18n="weld_shortcut_1"><kbd>Shift</kbd> + ドラッグ：15°スナップ</span>
+                        <span data-i18n="weld_shortcut_2"><kbd>Alt</kbd> + ドラッグ：パン（移動）</span>
+                        <span data-i18n="weld_shortcut_3"><kbd>ホイール</kbd>：拡大・縮小</span>
+                        <span data-i18n="weld_shortcut_4"><kbd>中クリック</kbd> + ドラッグ：パン</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
     <script src="app.js"></script>
     <script src="cpk.js"></script>
     <script src="grr.js"></script>
     <script src="gdt.js"></script>
     <script src="symbol.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="weld.js?v=7"></script>
+    <script async src="opencv.js"></script>
 </body>
 </html>
