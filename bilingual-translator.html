@@ -146,6 +146,12 @@
                         class="w-full bg-gradient-to-r from-brand-600 to-fuchsia-600 hover:from-brand-500 hover:to-fuchsia-500 text-white text-xs font-semibold py-2.5 px-3 rounded-xl shadow-lg shadow-brand-600/10 flex items-center justify-center gap-2 transition duration-200 active:scale-[0.98]">
                         <i class="fa-solid fa-microphone"></i> 翻訳開始
                     </button>
+
+                    <!-- 強制切断ボタン（常時表示・状態無関係） -->
+                    <button id="forceDisconnectBtn" onclick="forceDisconnect()"
+                        class="w-full bg-rose-950/60 hover:bg-rose-900/80 active:scale-[0.98] text-rose-400 hover:text-rose-300 text-xs font-semibold py-2.5 px-3 rounded-xl border border-rose-500/30 hover:border-rose-500/60 flex items-center justify-center gap-2 transition duration-200 shadow-inner">
+                        <i class="fa-solid fa-plug-circle-xmark"></i> 強制切断
+                    </button>
                     
                     <button id="resetLogBtn" onclick="clearSubtitlesAndLogs()" 
                         class="w-full bg-zinc-800/80 hover:bg-zinc-800 text-zinc-300 font-medium py-2 rounded-xl text-xs transition border border-white/5">
@@ -690,13 +696,6 @@
             }, 2500);
         }
 
-        function updateParallelTranscriptRaw(sessionType, text) {
-            // 原文（入力音声の文字起こし）をデバッグログにのみ表示
-            // 必要に応じてUIに表示する場合はここを拡張
-            logDebug(`[原文 ${sessionType}] ${text}`, "info");
-        }
-
-
         function injectErrorNotice(title, details) {
             const isFileProtocol = window.location.protocol === 'file:';
             const isSecure = window.isSecureContext;
@@ -963,7 +962,44 @@
             showToast("セッションを停止しました。", "info");
         }
 
+        // 強制切断: セッションの状態にかかわらず、すべてのAPI接続を即時強制終了する
+        function forceDisconnect() {
+            logDebug("[強制切断] API接続を強制終了します...", "warning");
+
+            // フラグを即座にリセット（進行中の送信ループを停止）
+            isSessionActive = false;
+            isConnecting = false;
+            isAudioSendingReady = false;
+            ws1Ready = false;
+            ws2Ready = false;
+
+            // マイク・音声リソースを解放
+            try { cleanupAudioNodes(); } catch(e) {}
+
+            // WebSocket を即座に強制クローズ
+            if (ws1) {
+                try { ws1.onclose = null; ws1.onerror = null; ws1.close(); } catch(e) {}
+                ws1 = null;
+            }
+            if (ws2) {
+                try { ws2.onclose = null; ws2.onerror = null; ws2.close(); } catch(e) {}
+                ws2 = null;
+            }
+
+            // UI を「未接続」状態に戻す
+            statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-zinc-500"></span> 未接続';
+            statusBadge.className = "px-3 py-1 bg-zinc-800 text-zinc-400 text-xs rounded-full font-medium flex items-center gap-1.5 border border-white/5";
+
+            toggleSessionBtn.innerHTML = '<i class="fa-solid fa-microphone"></i> 翻訳開始';
+            toggleSessionBtn.disabled = false;
+            toggleSessionBtn.className = "w-full bg-gradient-to-r from-brand-600 to-fuchsia-600 hover:from-brand-500 hover:to-fuchsia-500 text-white text-xs font-semibold py-2.5 px-3 rounded-xl shadow-lg shadow-brand-600/10 flex items-center justify-center gap-2 transition duration-200 active:scale-[0.98]";
+
+            logDebug("[強制切断] 完了。全てのAPI接続が終了しました。", "success");
+            showToast("API接続を強制切断しました。", "warning");
+        }
+
         function connectLiveSocket(apiKey, sessionType, instruction) {
+            // 公式ドキュメント通り v1beta を使用
             const apiVersion = "v1beta";
             const modelName = "models/gemini-3.5-live-translate-preview";
             const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.${apiVersion}.GenerativeService.BidiGenerateContent?key=${apiKey}`;
@@ -984,7 +1020,9 @@
                     setup: {
                         model: modelName,
                         generationConfig: {
+                            // 公式ドキュメント通り AUDIO が必須（TEXT は非サポート）
                             responseModalities: ["AUDIO"],
+                            // 文字起こし設定は generationConfig 内に配置（公式WebSocketサンプル準拠）
                             inputAudioTranscription: {},
                             outputAudioTranscription: {},
                             translationConfig: {
@@ -992,8 +1030,10 @@
                                 echoTargetLanguage: true
                             }
                         }
+                        // ※ live-translate-preview は systemInstruction 非サポートのため省略
                     }
                 };
+                logDebug(`セットアップ送信 (${sessionType}): ${JSON.stringify(setupMessage)}`, "info");
                 wsInstance.send(JSON.stringify(setupMessage));
             };
             
@@ -1011,25 +1051,38 @@
                         logDebug(`セットアップ完了 (${sessionType})`, "success");
                         if (sessionType === "ja-en") ws1Ready = true;
                         if (sessionType === "en-ja") ws2Ready = true;
-                        
                         checkAllSocketsReady();
                     } else if (data.serverContent) {
                         const content = data.serverContent;
-                        // 翻訳の入力文字起こし（原文）
+
+                        // 入力文字起こし (話者の言語のテキスト)
                         if (content.inputTranscription && content.inputTranscription.text) {
-                            const inputText = content.inputTranscription.text.trim();
-                            if (inputText) {
-                                logDebug(`[原文 - ${sessionType.toUpperCase()}] ${inputText}`, "info");
-                                // 入力側のパネルに原文を表示
-                                updateParallelTranscriptRaw(sessionType, inputText);
+                            const t = content.inputTranscription.text.trim();
+                            if (t) logDebug(`[入力音声 - ${sessionType.toUpperCase()}] ${t}`, "info");
+                        }
+
+                        // 出力文字起こし (翻訳後テキスト) ← 主なテキスト取得経路
+                        if (content.outputTranscription && content.outputTranscription.text) {
+                            const t = content.outputTranscription.text.trim();
+                            if (t) {
+                                logDebug(`[翻訳テキスト - ${sessionType.toUpperCase()}] ${t}`, "info");
+                                updateParallelTranscript(sessionType, t);
                             }
                         }
-                        // 翻訳の出力文字起こし（訳文）
-                        if (content.outputTranscription && content.outputTranscription.text) {
-                            const outputText = content.outputTranscription.text.trim();
-                            if (outputText) {
-                                logDebug(`[訳文 - ${sessionType.toUpperCase()}] ${outputText}`, "info");
-                                updateParallelTranscript(sessionType, outputText);
+
+                        // modelTurn.parts — 音声バイナリ確認 + テキストフォールバック
+                        if (content.modelTurn && content.modelTurn.parts) {
+                            let textFallback = "";
+                            for (const part of content.modelTurn.parts) {
+                                if (part.text) textFallback += part.text;
+                                if (part.inlineData && part.inlineData.mimeType && part.inlineData.mimeType.startsWith("audio/")) {
+                                    logDebug(`[音声受信 - ${sessionType.toUpperCase()}] ${part.inlineData.data.length} chars (base64)`, "info");
+                                }
+                            }
+                            // outputTranscription がなければ modelTurn のテキストを表示
+                            if (textFallback.trim() && !content.outputTranscription) {
+                                logDebug(`[テキスト(fb) - ${sessionType.toUpperCase()}] ${textFallback.trim()}`, "info");
+                                updateParallelTranscript(sessionType, textFallback.trim());
                             }
                         }
                     }
