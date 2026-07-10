@@ -197,7 +197,9 @@ const i18n = {
         weld_help_guide: "測定ガイドイメージ",
         weld_guide_example_title: "測定手順の参考例",
         imgcmp_app_title: "圧縮フォーマット比較ツール",
-        imgcmp_app_desc: "WebP / AVIF / JPEG / PNG などの画質・ファイルサイズを並べて比較。PSNR・RMSE・差分マップで客観評価。"
+        imgcmp_app_desc: "WebP / AVIF / JPEG / PNG などの画質・ファイルサイズを並べて比較。PSNR・RMSE・差分マップで客観評価。",
+        translator_app_title: "Gemini Live Bilingual Translator",
+        translator_app_desc: "超低遅延リアルタイム日英双方向音声翻訳 ＆ AI要約・アシスタント統合スタジオ。"
     },
     en: {
         portal_title: "Engineering Tools Portal",
@@ -396,7 +398,9 @@ const i18n = {
         weld_help_guide: "Measurement Guide Image",
         weld_guide_example_title: "Measurement Reference Examples",
         imgcmp_app_title: "Image Compression Format Comparator",
-        imgcmp_app_desc: "Compare image quality and file size across WebP / AVIF / JPEG / PNG. Objective evaluation with PSNR, RMSE, and diff maps."
+        imgcmp_app_desc: "Compare image quality and file size across WebP / AVIF / JPEG / PNG. Objective evaluation with PSNR, RMSE, and diff maps.",
+        translator_app_title: "Gemini Live Bilingual Translator",
+        translator_app_desc: "Ultra-low latency real-time Japanese-English bidirectional voice translation & AI summary/assistant integrated studio."
     },
     es: {
         portal_title: "Portal de Herramientas de Ingeniería",
@@ -595,7 +599,9 @@ const i18n = {
         weld_help_guide: "Imagen de la guía de medición",
         weld_guide_example_title: "Ejemplos de referencia de medición",
         imgcmp_app_title: "Comparador de Formatos de Compresión de Imágenes",
-        imgcmp_app_desc: "Compara calidad y tamaño de archivo entre WebP / AVIF / JPEG / PNG. Evaluación objetiva con PSNR, RMSE y mapas de diferencias."
+        imgcmp_app_desc: "Compara calidad y tamaño de archivo entre WebP / AVIF / JPEG / PNG. Evaluación objetiva con PSNR, RMSE y mapas de diferencias.",
+        translator_app_title: "Gemini Live Bilingual Translator",
+        translator_app_desc: "Traducción de voz bidireccional japonés-inglés en tiempo real de ultra baja latencia y estudio integrado de asistente/resumen de IA."
     }
 };
 

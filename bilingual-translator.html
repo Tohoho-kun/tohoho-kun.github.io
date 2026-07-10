@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="ja" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Live Bilingual Translator</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts & FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f5f3ff',
+                            100: '#ede9fe',
+                            200: '#ddd6fe',
+                            300: '#c4b5fd',
+                            400: '#a78bfa',
+                            500: '#8b5cf6', 
+                            600: '#7c3aed',
+                            700: '#6d28d9',
+                            800: '#5b21b6',
+                            900: '#4c1d95',
+                        },
+                        darkBg: '#090a0f',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #090a0f;
+            color: #f3f4f6;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #11131e;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2a2d44;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3f446b;
+        }
+        .glowing-panel {
+            box-shadow: 0 0 25px -5px rgba(139, 92, 246, 0.15);
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col antialiased overflow-hidden">
+
+    <!-- ナビゲーションバー -->
+    <header class="shrink-0 border-b border-white/5 bg-black/40 backdrop-blur-md relative z-40 px-6 py-3">
+        <div class="max-w-[1920px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex flex-wrap items-center gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-brand-500/20">
+                        <i class="fa-solid fa-language text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
+                            Gemini Live Bilingual Translator
+                            <span class="text-[9px] bg-brand-500/10 text-brand-400 border border-brand-500/20 px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider">TEXT ONLY</span>
+                        </h1>
+                        <p class="text-[11px] text-zinc-400">超低遅延翻訳 ＆ AIアシスタント統合スタジオ</p>
+                    </div>
+                </div>
+                
+                <div class="hidden md:flex items-center gap-2 border-l border-white/10 pl-4 ml-2">
+                    <label class="text-[10px] text-zinc-400 font-medium whitespace-nowrap"><i class="fa-solid fa-brain text-indigo-400 mr-1"></i>使用モデル:</label>
+                    <select id="assistantModelSelect" class="bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 transition">
+                        <option value="models/gemini-3.1-flash-lite">Gemini 3.1 Flash Lite</option>
+                        <option value="models/gemma-4-26b-a4b-it">Gemma4 26B (MoE)</option>
+                        <option value="models/gemma-4-31b-it">Gemma4 31B</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <div id="statusBadge" class="px-3 py-1 bg-zinc-800 text-zinc-400 text-xs rounded-full font-medium flex items-center gap-1.5 border border-white/5">
+                    <span class="w-2 h-2 rounded-full bg-zinc-500"></span> 未接続
+                </div>
+                <a href="#guideModal" onclick="openGuide()" class="text-sm text-zinc-400 hover:text-white transition flex items-center gap-1.5">
+                    <i class="fa-regular fa-circle-question"></i> 使い方
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツエリア (4カラム・フルハイトレイアウト) -->
+    <main class="flex-grow w-full max-w-[1920px] mx-auto p-4 grid grid-cols-1 xl:grid-cols-12 gap-4 min-h-0 overflow-y-auto xl:overflow-hidden">
+        
+        <!-- ============================================== -->
+        <!-- 1. 左端ペイン: 設定パネル (xl:col-span-2) -->
+        <!-- ============================================== -->
+        <div class="xl:col-span-2 flex flex-col gap-4 h-auto xl:h-full overflow-visible xl:overflow-y-auto pr-1 pb-2">
+            
+            <div class="bg-zinc-900/60 border border-white/5 rounded-2xl p-4 backdrop-blur-md glowing-panel shrink-0">
+                <h2 class="text-sm font-semibold text-zinc-200 mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-key text-brand-400"></i> APIキー認証
+                </h2>
+                <div class="space-y-3">
+                    <div>
+                        <div class="relative">
+                            <input type="password" id="apiKeyInput" 
+                                class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm font-mono text-white placeholder-zinc-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/20 transition"
+                                placeholder="AIzaSy...">
+                            <button onclick="toggleApiKeyVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300">
+                                <i id="eyeIcon" class="fa-regular fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-1">
+                        <span class="text-xs text-zinc-300 font-medium">キーを保存する</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="saveKeyCheckbox" class="sr-only peer" checked>
+                            <div class="w-8 h-4 bg-zinc-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-400 after:border-zinc-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-brand-600 peer-checked:after:bg-white"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-zinc-900/60 border border-white/5 rounded-2xl p-4 backdrop-blur-md glowing-panel shrink-0">
+                <h2 class="text-sm font-semibold text-zinc-200 mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-power-off text-brand-400"></i> コントロール
+                </h2>
+                <div class="space-y-2">
+                    <button id="toggleSessionBtn" onclick="toggleSession()" 
+                        class="w-full bg-gradient-to-r from-brand-600 to-fuchsia-600 hover:from-brand-500 hover:to-fuchsia-500 text-white text-xs font-semibold py-2.5 px-3 rounded-xl shadow-lg shadow-brand-600/10 flex items-center justify-center gap-2 transition duration-200 active:scale-[0.98]">
+                        <i class="fa-solid fa-microphone"></i> 翻訳開始
+                    </button>
+                    
+                    <button id="resetLogBtn" onclick="clearSubtitlesAndLogs()" 
+                        class="w-full bg-zinc-800/80 hover:bg-zinc-800 text-zinc-300 font-medium py-2 rounded-xl text-xs transition border border-white/5">
+                        履歴をクリア
+                    </button>
+                    
+                    <button onclick="downloadAllMarkdown()" 
+                        class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 rounded-xl text-xs transition flex items-center justify-center gap-1.5 border border-blue-500/30">
+                        <i class="fa-solid fa-file-arrow-down"></i> 全てをMD保存
+                    </button>
+                </div>
+            </div>
+            
+            <div class="bg-zinc-900/60 border border-white/5 rounded-2xl p-4 backdrop-blur-md glowing-panel shrink-0">
+                <div class="space-y-3 text-xs text-zinc-400">
+                    <div class="bg-zinc-950/60 p-3 rounded-xl border border-white/5 space-y-1.5">
+                        <p class="text-zinc-300 font-medium flex items-center gap-1.5 text-[11px]">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            セッション1 (JA → EN):
+                        </p>
+                        <p class="pl-3 border-l border-emerald-500/30 text-[10px]">
+                            日本語を英語へリアルタイム翻訳。
+                        </p>
+                    </div>
+
+                    <div class="bg-zinc-950/60 p-3 rounded-xl border border-white/5 space-y-1.5">
+                        <p class="text-zinc-300 font-medium flex items-center gap-1.5 text-[11px]">
+                            <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                            セッション2 (EN → JA):
+                        </p>
+                        <p class="pl-3 border-l border-indigo-500/30 text-[10px]">
+                            英語を日本語へリアルタイム翻訳。
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ============================================== -->
+        <!-- 2. 第2列: リアルタイム字幕 (xl:col-span-4) -->
+        <!-- ============================================== -->
+        <div class="xl:col-span-4 flex flex-col gap-4 h-auto xl:h-full min-h-[600px] xl:min-h-0">
+            
+            <!-- マイク入力レベルモニター -->
+            <div class="bg-zinc-900/40 border border-white/5 rounded-2xl p-3 flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-3">
+                    <div id="micRing" class="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-400 transition-all duration-300">
+                        <i class="fa-solid fa-microphone text-sm"></i>
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-zinc-400 font-medium">マイク入力検知</p>
+                        <p id="micVolumeText" class="text-xs font-mono text-zinc-500">未接続</p>
+                    </div>
+                </div>
+                <!-- 簡易音量バー -->
+                <div class="w-24 sm:w-32 bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+                    <div id="micVolumeBar" class="h-full bg-emerald-500 w-0 transition-all duration-75"></div>
+                </div>
+            </div>
+
+            <!-- リアルタイム・ライブ翻訳字幕 -->
+            <div class="bg-zinc-900/40 border border-white/5 rounded-2xl flex-grow flex flex-col min-h-0">
+                <div class="px-5 py-3 border-b border-white/5 flex items-center justify-between shrink-0">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-brand-500 animate-pulse"></span>
+                        <span class="text-xs font-semibold uppercase tracking-wider text-zinc-300">パラレル・テキスト字幕</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span id="liveLanguageTag" class="text-[10px] bg-white/5 px-2 py-1 rounded font-mono text-zinc-400">JA→EN & EN→JA</span>
+                        <button onclick="downloadTranscriptMarkdown()" class="text-zinc-400 hover:text-white transition" title="文字起こしをMarkdownで保存"><i class="fa-solid fa-download"></i></button>
+                    </div>
+                </div>
+                
+                <!-- 字幕対話タイムライン -->
+                <div id="subtitlesContainer" class="flex-grow p-5 overflow-y-auto space-y-5 flex flex-col">
+                    <div class="text-center py-16 text-zinc-500 flex flex-col items-center gap-3 font-medium my-auto">
+                        <i class="fa-solid fa-comments text-4xl opacity-20"></i>
+                        <p class="text-sm text-zinc-300">ここに2つの翻訳セッション結果が並行して表示されます。</p>
+                        <p class="text-xs text-zinc-500 leading-relaxed">「翻訳セッションを開始」をクリックして話しかけてください。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- デバッグ＆通信ログコンソール -->
+            <div class="bg-zinc-950 border border-white/5 rounded-2xl overflow-hidden shrink-0 flex flex-col">
+                <button onclick="toggleConsole()" class="w-full px-4 py-2.5 flex items-center justify-between hover:bg-white/[0.02] transition text-left">
+                    <span class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 font-mono flex items-center gap-2">
+                        <i class="fa-solid fa-terminal text-brand-400"></i> WebSocketコンソール
+                    </span>
+                    <i id="consoleChevron" class="fa-solid fa-chevron-down text-zinc-500 text-xs transition-transform duration-200"></i>
+                </button>
+                <div id="consoleBody" class="hidden border-t border-white/5 bg-black/80 font-mono text-[11px] text-zinc-400 p-3 h-32 overflow-y-auto space-y-1">
+                    <p class="text-zinc-600">[SYSTEM] コンソール初期化完了。通信の生データを監視します。</p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ============================================== -->
+        <!-- 3. 第3列: 会話の要約 (xl:col-span-3) -->
+        <!-- ============================================== -->
+        <div class="xl:col-span-3 flex flex-col gap-4 h-auto xl:h-full min-h-[400px] xl:min-h-0 pr-1 pb-2">
+            
+            <!-- 任意のタイミングで要約ペイン -->
+            <div class="bg-zinc-900/60 border border-white/5 rounded-2xl flex flex-col backdrop-blur-md glowing-panel overflow-hidden h-full">
+                <div class="px-4 py-2.5 border-b border-white/5 bg-zinc-950/50 flex items-center justify-between shrink-0">
+                    <h2 class="text-xs font-semibold text-zinc-200 flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-emerald-400"></i> 会話の要約
+                    </h2>
+                    <div class="flex items-center gap-3">
+                        <button onclick="runSummary()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-semibold px-2.5 py-1 rounded transition shadow-lg">
+                            今すぐ要約
+                        </button>
+                        <button onclick="downloadSummaryMarkdown()" class="text-zinc-400 hover:text-white transition" title="要約をMarkdownで保存"><i class="fa-solid fa-download"></i></button>
+                    </div>
+                </div>
+                <div id="summaryOutput" class="p-4 text-xs text-zinc-300 leading-relaxed overflow-y-auto flex-grow bg-black/20">
+                    <p class="text-zinc-500 italic text-center mt-6">「今すぐ要約」をクリックすると、<br>ここまでの文字起こしをAIがまとめます。</p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ============================================== -->
+        <!-- 4. 第4列: AIに質問 (xl:col-span-3) -->
+        <!-- ============================================== -->
+        <div class="xl:col-span-3 flex flex-col gap-4 h-auto xl:h-full min-h-[400px] xl:min-h-0 pr-1 pb-2">
+
+            <!-- 文脈質問ペイン -->
+            <div class="bg-zinc-900/60 border border-white/5 rounded-2xl flex flex-col backdrop-blur-md glowing-panel overflow-hidden h-full">
+                <div class="px-4 py-2.5 border-b border-white/5 bg-zinc-950/50 flex items-center justify-between shrink-0">
+                    <h2 class="text-xs font-semibold text-zinc-200 flex items-center gap-2">
+                        <i class="fa-solid fa-clipboard-question text-amber-400"></i> AIに質問する
+                    </h2>
+                    <button onclick="downloadQaMarkdown()" class="text-zinc-400 hover:text-white transition" title="Q&AをMarkdownで保存"><i class="fa-solid fa-download"></i></button>
+                </div>
+                <div class="p-4 flex flex-col gap-3 flex-grow overflow-hidden min-h-0">
+                    <div id="qaOutput" class="flex-grow bg-black/40 rounded-xl p-3 text-xs text-zinc-300 border border-white/5 overflow-y-auto min-h-0">
+                        <p class="text-zinc-500 italic text-center mt-6">AIへの質問と回答が<br>ここに表示されます。</p>
+                    </div>
+                    
+                    <div class="flex flex-col gap-2 mt-auto pt-2 border-t border-white/5 shrink-0">
+                        <!-- 文字起こし送信トグル -->
+                        <label class="flex items-center gap-2 cursor-pointer group mb-1">
+                            <div class="relative flex items-center">
+                                <input type="checkbox" id="qaIncludeContext" class="sr-only peer" checked>
+                                <div class="w-8 h-4 bg-zinc-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-400 after:border-zinc-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-amber-600 peer-checked:after:bg-white"></div>
+                            </div>
+                            <span class="text-[10px] text-zinc-400 group-hover:text-zinc-300 transition">全文字起こしをコンテキストに含める</span>
+                        </label>
+                        
+                        <!-- 質問入力フォーム -->
+                        <div class="flex gap-2">
+                            <input type="text" id="qaInput" placeholder="例: さっきの数字は何？" class="flex-grow bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500 transition" onkeydown="if(event.key==='Enter') askQuestion()">
+                            <button onclick="askQuestion()" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-2 rounded-lg text-xs transition shadow-lg shrink-0">
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- フッター -->
+    <footer class="shrink-0 border-t border-white/5 py-3 px-6 text-center text-[10px] text-zinc-500">
+        <div class="max-w-[1920px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+            <p>© 2026 Gemini Bilingual Translation Platform</p>
+            <p>Powered by Google Gemini Live API & AI Studio Models</p>
+        </div>
+    </footer>
+
+    <!-- 使い方モーダル -->
+    <div id="guideModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm hidden">
+        <div class="bg-zinc-900 border border-white/10 rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl">
+            <div class="p-6 border-b border-white/5 flex items-center justify-between">
+                <h3 class="font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-circle-info text-brand-400"></i> システムの使い方
+                </h3>
+                <button onclick="closeGuide()" class="text-zinc-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6 space-y-4 text-sm text-zinc-300 leading-relaxed">
+                <p>
+                    このアプリは、<strong>超低遅延のリアルタイム日⇄英相互翻訳</strong>と、<strong>AIアシスタント機能</strong>を統合したプラットフォームです。
+                </p>
+                <div class="bg-brand-950/40 border border-brand-500/20 rounded-xl p-3.5 text-brand-300 space-y-2 text-xs">
+                    <ul class="list-disc pl-4 space-y-1">
+                        <li><strong>リアルタイム翻訳:</strong> 中央ペイン。日本語/英語を自動識別してテキスト出力します。</li>
+                        <li><strong>AI要約・Q&A:</strong> 右ペイン。選択した最新モデルを使い、会話の要約や、文脈に応じた質問に答えます。文字起こしを含めず既存知識のみで答えることも可能です。</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-white mb-1.5">接続の手順：</h4>
+                    <ol class="list-decimal pl-4 space-y-1.5 text-xs text-zinc-400">
+                        <li>有効な <strong class="text-zinc-200">Gemini APIキー</strong> を入力。</li>
+                        <li>「翻訳セッションを開始」をクリックし、マイクを許可して話しかけます。</li>
+                    </ol>
+                </div>
+            </div>
+            <div class="p-4 bg-zinc-950 text-right">
+                <button onclick="closeGuide()" class="bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold py-2 px-4 rounded-lg transition">了解しました</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ローカルサーバー起動ガイドモーダル -->
+    <div id="localServerModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md hidden">
+        <div class="bg-zinc-900 border border-white/10 rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl">
+            <div class="p-6 border-b border-white/5 flex items-center justify-between bg-zinc-950/40">
+                <h3 class="font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-circle-play text-indigo-400"></i> マイク利用のためのローカルサーバー起動ガイド
+                </h3>
+                <button onclick="closeLocalServerGuide()" class="text-zinc-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6 space-y-4 text-xs md:text-sm text-zinc-300 leading-relaxed max-h-[75vh] overflow-y-auto">
+                <p class="text-rose-400 font-semibold flex items-start gap-1.5 leading-normal">
+                    <i class="fa-solid fa-shield-halved mt-0.5 text-base"></i>
+                    ブラウザの仕様により、HTMLファイルをただダブルクリックした状態 (file://) では、マイクへのアクセスが完全にブロックされます。
+                </p>
+                <p class="text-zinc-400 text-xs">
+                    安全な通信コンテキストを偽装するため、ご自身のパソコン上で簡易的な「ローカルWebサーバー」を立ち上げて実行する必要があります。
+                </p>
+                <div class="bg-zinc-950 p-4 rounded-xl border border-white/5">
+                    <p class="font-bold text-white flex items-center gap-2 mb-1.5">
+                        <span class="w-5 h-5 rounded-md bg-emerald-600/20 text-emerald-400 flex items-center justify-center font-mono">1</span>
+                        Python コマンドを使う場合
+                    </p>
+                    <ol class="list-decimal pl-4 text-zinc-400 space-y-1 mb-2">
+                        <li>ターミナル（Mac）またはコマンドプロンプト（Win）を起動。</li>
+                        <li>このファイルが存在するフォルダへ移動し、次を実行：</li>
+                    </ol>
+                    <div class="bg-black/60 px-3.5 py-2 rounded-lg font-mono text-xs text-brand-300 select-all border border-white/5 mb-1">
+                        python -m http.server 8000
+                    </div>
+                    <p class="text-[11px] text-zinc-500">起動後、ブラウザで <strong class="text-zinc-300">http://localhost:8000</strong> にアクセスしてください。</p>
+                </div>
+            </div>
+            <div class="p-4 bg-zinc-950 text-right flex justify-between items-center px-6">
+                <span class="text-[11px] text-zinc-500">※サーバー上で実行すると、マイク許可ダイアログが出現します</span>
+                <button onclick="closeLocalServerGuide()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold py-2 px-4 rounded-lg transition">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- カスタム通知ポップアップ -->
+    <div id="toastNotification" class="fixed bottom-6 right-6 z-50 bg-zinc-900 border border-white/15 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 transition-all duration-300 transform translate-y-20 opacity-0 pointer-events-none">
+        <div id="toastIcon" class="w-6 h-6 rounded-full flex items-center justify-center text-xs"></div>
+        <div>
+            <p id="toastMessage" class="text-xs text-zinc-200 font-medium"></p>
+        </div>
+    </div>
+
+    <!-- JavaScript ロジック -->
+    <script>
+        const KEY_STORAGE_NAME = "gemini_live_translate_api_key";
+        
+        let ws1 = null;
+        let ws2 = null;
+        let ws1Ready = false;
+        let ws2Ready = false;
+        
+        let isSessionActive = false;
+        let isConnecting = false; // [追加] セッション確立待機中のフラグ
+        let isConsoleOpen = false;
+        let isManuallyStopped = false; 
+        
+        // オーディオ録音用状態
+        let audioContext = null;
+        let micStream = null;
+        let scriptProcessor = null;
+        let audioInput = null;
+        let isAudioSendingReady = false; 
+
+        // クライアント側無音検知 (VAD) 用の変数
+        let silenceTimer = null;
+        let isSpeaking = false;
+
+        // UIバインディング
+        const apiKeyInput = document.getElementById("apiKeyInput");
+        const saveKeyCheckbox = document.getElementById("saveKeyCheckbox");
+        const toggleSessionBtn = document.getElementById("toggleSessionBtn");
+        const statusBadge = document.getElementById("statusBadge");
+        const consoleBody = document.getElementById("consoleBody");
+        const consoleChevron = document.getElementById("consoleChevron");
+        const subtitlesContainer = document.getElementById("subtitlesContainer");
+        
+        const micVolumeBar = document.getElementById("micVolumeBar");
+        const micVolumeText = document.getElementById("micVolumeText");
+        const micRing = document.getElementById("micRing");
+
+        window.addEventListener("DOMContentLoaded", () => {
+            const savedKey = localStorage.getItem(KEY_STORAGE_NAME);
+            if (savedKey) {
+                apiKeyInput.value = savedKey;
+            }
+            
+            const isFileProtocol = window.location.protocol === 'file:';
+            const isSecure = window.isSecureContext;
+            
+            if (isFileProtocol || !isSecure) {
+                logDebug("安全でない環境(Secure Context外) または ローカルファイル(file://)環境を検出。マイクAPIがブラウザによって無効化されています。", "warning");
+                showToast("現在の環境ではマイクが使えません。解決方法を確認してください。", "warning");
+                setTimeout(openLocalServerGuide, 600);
+            }
+        });
+
+        // 共通Markdown保存処理
+        function downloadMarkdown(content, filename) {
+            if (!content || !content.trim()) {
+                showToast("保存する内容がありません。", "warning");
+                return;
+            }
+            try {
+                const blob = new Blob([content], { type: 'text/markdown;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showToast(`${filename} を保存しました！`, "success");
+            } catch (err) {
+                showToast("ファイルの保存に失敗しました。", "error");
+            }
+        }
+
+        // 文字起こしのMD生成
+        function getTranscriptMarkdownContent() {
+            let md = "# 会話タイムライン (JA⇄EN)\n\n";
+            const turns = subtitlesContainer.querySelectorAll('[data-role="parallel-turn"]');
+            if (turns.length === 0) return "";
+            
+            turns.forEach((turn, index) => {
+                const jaEn = turn.querySelector('.translation-text-ja-en')?.innerText || "";
+                const enJa = turn.querySelector('.translation-text-en-ja')?.innerText || "";
+                if (jaEn !== "..." || enJa !== "...") {
+                    md += `### ターン ${index + 1}\n`;
+                    if (jaEn !== "...") md += `- **[JA→EN]**: ${jaEn}\n`;
+                    if (enJa !== "...") md += `- **[EN→JA]**: ${enJa}\n`;
+                    md += "\n";
+                }
+            });
+            return md;
+        }
+
+        // 要約のMD生成
+        function getSummaryMarkdownContent() {
+            const outDiv = document.getElementById("summaryOutput");
+            let text = outDiv.innerText.trim();
+            if (text.includes("「今すぐ要約」をクリックすると") || text.includes("要約する会話がありません") || text.includes("会話を解析・要約中")) {
+                return "";
+            }
+            return `# 会話の要約\n\n${text}\n`;
+        }
+
+        // Q&AのMD生成
+        function getQaMarkdownContent() {
+            const outDiv = document.getElementById("qaOutput");
+            let md = "# AIへの質問と回答\n\n";
+            const children = outDiv.children;
+            let hasContent = false;
+            
+            for (let i = 0; i < children.length; i++) {
+                const child = children[i];
+                if (child.classList.contains("mb-3")) { // 質問部分
+                    const qText = child.innerText.trim();
+                    md += `**${qText}**\n\n`;
+                    hasContent = true;
+                } else if (child.classList.contains("whitespace-pre-wrap")) { // 回答部分
+                    const aText = child.innerText.trim();
+                    md += `${aText}\n\n---\n\n`;
+                }
+            }
+            
+            if (!hasContent) return "";
+            return md;
+        }
+
+        function downloadTranscriptMarkdown() {
+            downloadMarkdown(getTranscriptMarkdownContent(), "transcript.md");
+        }
+
+        function downloadSummaryMarkdown() {
+            downloadMarkdown(getSummaryMarkdownContent(), "summary.md");
+        }
+
+        function downloadQaMarkdown() {
+            downloadMarkdown(getQaMarkdownContent(), "qa.md");
+        }
+
+        function downloadAllMarkdown() {
+            const transcript = getTranscriptMarkdownContent();
+            const summary = getSummaryMarkdownContent();
+            const qa = getQaMarkdownContent();
+            
+            let content = "";
+            if (transcript) content += transcript + "\n\n";
+            if (summary) content += summary + "\n\n";
+            if (qa) content += qa + "\n\n";
+            
+            if (!content) {
+                showToast("保存する内容がありません。", "warning");
+                return;
+            }
+            
+            downloadMarkdown(content, "all_records.md");
+        }
+
+        function toggleApiKeyVisibility() {
+            const eyeIcon = document.getElementById("eyeIcon");
+            if (apiKeyInput.type === "password") {
+                apiKeyInput.type = "text";
+                eyeIcon.className = "fa-regular fa-eye-slash";
+            } else {
+                apiKeyInput.type = "password";
+                eyeIcon.className = "fa-regular fa-eye";
+            }
+        }
+
+        function openGuide() { document.getElementById("guideModal").classList.remove("hidden"); }
+        function closeGuide() { document.getElementById("guideModal").classList.add("hidden"); }
+        function openLocalServerGuide() { document.getElementById("localServerModal").classList.remove("hidden"); }
+        function closeLocalServerGuide() { document.getElementById("localServerModal").classList.add("hidden"); }
+
+        function toggleConsole() {
+            isConsoleOpen = !isConsoleOpen;
+            if (isConsoleOpen) {
+                consoleBody.classList.remove("hidden");
+                consoleChevron.style.transform = "rotate(180deg)";
+            } else {
+                consoleBody.classList.add("hidden");
+                consoleChevron.style.transform = "rotate(0deg)";
+            }
+        }
+
+        function showToast(message, type = "info") {
+            const toast = document.getElementById("toastNotification");
+            const icon = document.getElementById("toastIcon");
+            const msgEl = document.getElementById("toastMessage");
+            msgEl.innerText = message;
+            
+            if (type === "success") {
+                icon.className = "w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs";
+                icon.innerHTML = '<i class="fa-solid fa-check"></i>';
+            } else if (type === "error") {
+                icon.className = "w-6 h-6 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center text-xs";
+                icon.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+            } else if (type === "warning") {
+                icon.className = "w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs";
+                icon.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i>';
+            } else {
+                icon.className = "w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-xs";
+                icon.innerHTML = '<i class="fa-solid fa-info"></i>';
+            }
+            
+            toast.classList.remove("opacity-0", "translate-y-20", "pointer-events-none");
+            toast.classList.add("opacity-100", "translate-y-0");
+            setTimeout(() => {
+                toast.classList.remove("opacity-100", "translate-y-0");
+                toast.classList.add("opacity-0", "translate-y-20", "pointer-events-none");
+            }, 6000);
+        }
+
+        function logDebug(message, type = "info", rawJson = null) {
+            const time = new Date().toTimeString().split(' ')[0];
+            const p = document.createElement("p");
+            let prefix = `[${time}] `;
+            
+            if (type === "error") p.className = "text-rose-400";
+            else if (type === "success") p.className = "text-emerald-400";
+            else if (type === "warning") p.className = "text-amber-400";
+            else p.className = "text-zinc-400";
+            
+            p.innerText = prefix + message;
+            consoleBody.appendChild(p);
+            
+            if (rawJson) {
+                const pre = document.createElement("pre");
+                pre.className = "text-[10px] text-zinc-500 bg-white/5 p-2 rounded my-1 overflow-x-auto max-w-full whitespace-pre-wrap font-mono";
+                pre.innerText = JSON.stringify(rawJson, null, 2);
+                consoleBody.appendChild(pre);
+            }
+            consoleBody.scrollTop = consoleBody.scrollHeight;
+        }
+
+        function clearSubtitlesAndLogs() {
+            subtitlesContainer.innerHTML = `
+                <div class="text-center py-16 text-zinc-500 flex flex-col items-center gap-3 font-medium my-auto">
+                    <i class="fa-solid fa-comments text-4xl opacity-20"></i>
+                    <p class="text-sm">字幕履歴がリセットされました。</p>
+                </div>
+            `;
+            showToast("字幕の履歴をリセットしました。", "info");
+        }
+
+        let turnCompleteTimeout = null;
+
+        function getOrCreateParallelSubtitleBox() {
+            const lastChild = subtitlesContainer.lastElementChild;
+            if (lastChild && lastChild.dataset.role === "parallel-turn" && !lastChild.dataset.completed) {
+                return lastChild;
+            }
+            const box = document.createElement("div");
+            box.dataset.role = "parallel-turn";
+            box.className = "bg-zinc-900/50 border border-white/5 p-4 rounded-2xl flex flex-col gap-3 transition-all duration-300";
+            box.innerHTML = `
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="flex flex-col gap-1">
+                        <span class="text-[10px] font-bold text-emerald-400 flex items-center gap-1.5"><i class="fa-solid fa-language"></i> JA → EN</span>
+                        <p class="translation-text-ja-en text-sm text-zinc-100 font-semibold whitespace-pre-wrap leading-relaxed">...</p>
+                    </div>
+                    <div class="flex flex-col gap-1 border-l border-white/5 pl-4">
+                        <span class="text-[10px] font-bold text-indigo-400 flex items-center gap-1.5"><i class="fa-solid fa-language"></i> EN → JA</span>
+                        <p class="translation-text-en-ja text-sm text-zinc-100 font-semibold whitespace-pre-wrap leading-relaxed">...</p>
+                    </div>
+                </div>
+            `;
+            if (subtitlesContainer.querySelector('.text-center')) subtitlesContainer.innerHTML = '';
+            subtitlesContainer.appendChild(box);
+            subtitlesContainer.scrollTop = subtitlesContainer.scrollHeight;
+            return box;
+        }
+
+        function updateParallelTranscript(sessionType, text) {
+            const box = getOrCreateParallelSubtitleBox();
+            const p = box.querySelector(`.translation-text-${sessionType}`);
+            if (p) {
+                if (p.innerText === "...") p.innerText = text;
+                else p.innerText += text;
+            }
+            subtitlesContainer.scrollTop = subtitlesContainer.scrollHeight;
+            
+            if (turnCompleteTimeout) clearTimeout(turnCompleteTimeout);
+            turnCompleteTimeout = setTimeout(() => {
+                box.dataset.completed = "true";
+                box.className = "bg-zinc-900/30 border border-white/5 p-4 rounded-2xl flex flex-col gap-3 opacity-80 scale-[0.99] transition-all duration-300";
+            }, 2500);
+        }
+
+        function injectErrorNotice(title, details) {
+            const isFileProtocol = window.location.protocol === 'file:';
+            const isSecure = window.isSecureContext;
+            let extraTip = "";
+            
+            if (isFileProtocol || !isSecure) {
+                extraTip = `
+                    <div class="bg-indigo-950/40 border border-indigo-500/20 p-3 rounded-xl space-y-2 mt-2">
+                        <p class="font-bold text-indigo-400 text-xs flex items-center gap-1.5"><i class="fa-solid fa-circle-play"></i> 安全なサーバー環境での起動が必須です：</p>
+                        <p class="text-[11px] text-zinc-300 leading-relaxed">
+                            ブラウザのセキュリティ仕様により、現在の状態（file:// または非HTTPS環境）ではマイクの呼び出しが完全にブロックされています。<br>
+                            この問題を解決するには、一緒に作成したバッチファイル <code>start_translator_server.bat</code> をダブルクリックしてローカルサーバー(localhost)を起動してください。
+                        </p>
+                        <button onclick="openLocalServerGuide()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-1.5 rounded-lg text-xs transition mt-1">
+                            詳細な起動方法を確認する
+                        </button>
+                    </div>
+                `;
+            }
+            const box = document.createElement("div");
+            box.className = "bg-rose-950/30 border border-rose-500/25 p-4 rounded-2xl flex flex-col gap-2 text-zinc-300";
+            box.innerHTML = `
+                <div class="flex items-center gap-2 text-rose-400 font-bold text-sm">
+                    <i class="fa-solid fa-triangle-exclamation text-lg"></i><span>${title}</span>
+                </div>
+                <div class="text-xs space-y-2 leading-relaxed">
+                    <p class="text-zinc-200">${details}</p>
+                    ${extraTip}
+                </div>
+            `;
+            if (subtitlesContainer.querySelector('.text-center')) subtitlesContainer.innerHTML = '';
+            subtitlesContainer.appendChild(box);
+            subtitlesContainer.scrollTop = subtitlesContainer.scrollHeight;
+        }
+
+        async function initAudioSystem() {
+            logDebug("音声デバイスの初期設定を開始します...", "info");
+            
+            try {
+                try { cleanupAudioNodes(); } catch (e) {}
+
+                if (!window.isSecureContext) {
+                    throw new Error("SECURE_CONTEXT_ERROR");
+                }
+
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error("API_NOT_FOUND");
+                }
+
+                const constraints = {
+                    audio: { channelCount: 1, sampleRate: 16000, echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+                    video: false
+                };
+                
+                logDebug("マイクへのアクセス許可をリクエストしています...", "info");
+                
+                const getUserMediaPromise = navigator.mediaDevices.getUserMedia(constraints);
+                const timeoutPromise = new Promise((_, reject) => {
+                    setTimeout(() => reject(new Error("TIMEOUT")), 10000);
+                });
+                
+                micStream = await Promise.race([getUserMediaPromise, timeoutPromise]);
+                logDebug("マイクのアクセス許可を検知・取得しました。", "success");
+
+                audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+                if (audioContext.state === 'suspended') await audioContext.resume();
+
+                audioInput = audioContext.createMediaStreamSource(micStream);
+                scriptProcessor = audioContext.createScriptProcessor(2048, 1, 1);
+                
+                scriptProcessor.onaudioprocess = (e) => {
+                    if (!isSessionActive || !isAudioSendingReady) return;
+                    const inputBuffer = e.inputBuffer.getChannelData(0);
+                    
+                    const gainMultiplier = 3.0; 
+                    let sum = 0;
+                    for (let i = 0; i < inputBuffer.length; i++) {
+                        inputBuffer[i] *= gainMultiplier;
+                        sum += inputBuffer[i] * inputBuffer[i];
+                    }
+                    const rms = Math.sqrt(sum / inputBuffer.length);
+                    updateInputMeter(rms);
+
+                    const resampled = resample(inputBuffer, e.inputBuffer.sampleRate, 16000);
+                    const pcmBuffer = convertFloat32To16BitPCM(resampled);
+                    const base64Audio = arrayBufferToBase64(pcmBuffer);
+                    
+                    sendAudioChunk(base64Audio);
+                    
+                    // ※ 注意: gemini-3.5-live-translate-preview は turnComplete を受け付けないため、
+                    // クライアント側からの無音検知・強制送信ロジックは削除しています。
+                    // 翻訳の確定（ターンの完了）はすべてサーバー側のAIに一任します。
+                };
+                
+                audioInput.connect(scriptProcessor);
+                scriptProcessor.connect(audioContext.destination);
+                
+                logDebug("音声録音パイプライン(16kHzレコーダー)の準備が完了しました。", "success");
+                return true;
+
+            } catch (err) {
+                let errName = err.name || "";
+                let errMessage = err.message || "";
+                let errorDetails = errName ? `${errName}: ${errMessage}` : (errMessage || "Unknown Error");
+                
+                logDebug(`音声システムの起動失敗: ${errorDetails}`, "error");
+                
+                if (errMessage === "SECURE_CONTEXT_ERROR" || errMessage === "API_NOT_FOUND" || window.location.protocol === 'file:') {
+                    showToast("マイク起動失敗：セキュリティ制限によりマイクAPIが無効化されています。", "error");
+                    injectErrorNotice("マイクの初期化に失敗しました (ブラウザのセキュリティ制限)", "現在のアクセス方法（file:// プロトコルや非HTTPS環境）では、盗聴防止のためブラウザがマイクAPIへのアクセスを完全にブロック・無効化しています。バッチファイルを使用してローカルサーバー経由で起動してください。");
+                    openLocalServerGuide();
+                } else if (errMessage === "TIMEOUT") {
+                    showToast("マイク要求がタイムアウトしました。", "error");
+                    injectErrorNotice("マイクの初期化がタイムアウトしました", "マイクの許可ポップアップがブラウザにブロックされているか、他のアプリがマイクを独占して応答がない状態です。<br>ブラウザのURLバー左側のアイコンからマイクの許可状況を確認してください。");
+                } else {
+                    showToast("マイク接続中にエラーが発生しました。", "error");
+                    injectErrorNotice("マイクの初期化に失敗しました", `原因: ${errorDetails}<br><br>💡 解決策:<br>ブラウザのURLバー左側のアイコン（🔒マークなど）をクリックし、マイクの使用が「許可」されているか確認してからページを再読み込みしてください。`);
+                }
+                
+                try { cleanupAudioNodes(); } catch(e){}
+                return false;
+            }
+        }
+
+        function cleanupAudioNodes() {
+            isAudioSendingReady = false;
+            if (scriptProcessor) { try { scriptProcessor.disconnect(); } catch(e) {} scriptProcessor = null; }
+            if (audioInput) { try { audioInput.disconnect(); } catch(e) {} audioInput = null; }
+            if (audioContext) { try { audioContext.close(); } catch(e) {} audioContext = null; }
+            if (micStream) { try { micStream.getTracks().forEach(track => track.stop()); } catch(e) {} micStream = null; }
+            updateInputMeter(0);
+        }
+
+        function resample(inputBuffer, inputSampleRate, outputSampleRate) {
+            if (inputSampleRate === outputSampleRate) return inputBuffer;
+            const sampleRateRatio = inputSampleRate / outputSampleRate;
+            const newLength = Math.round(inputBuffer.length / sampleRateRatio);
+            const result = new Float32Array(newLength);
+            for (let i = 0; i < newLength; i++) {
+                const index = Math.round(i * sampleRateRatio);
+                result[i] = inputBuffer[Math.min(index, inputBuffer.length - 1)];
+            }
+            return result;
+        }
+
+        function convertFloat32To16BitPCM(buffer) {
+            const bufferLen = buffer.length;
+            const pcmBuffer = new ArrayBuffer(bufferLen * 2);
+            const view = new DataView(pcmBuffer);
+            let offset = 0;
+            for (let i = 0; i < bufferLen; i++, offset += 2) {
+                let s = Math.max(-1, Math.min(1, buffer[i]));
+                view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+            }
+            return pcmBuffer;
+        }
+
+        function arrayBufferToBase64(buffer) {
+            let binary = '';
+            const bytes = new Uint8Array(buffer);
+            const len = bytes.byteLength;
+            for (let i = 0; i < len; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return btoa(binary);
+        }
+
+        function updateInputMeter(rms) {
+            const level = Math.min(100, Math.round(rms * 100 * 5));
+            micVolumeBar.style.width = level + "%";
+            if (isSessionActive) {
+                micVolumeText.innerText = `検出中 (${level}%)`;
+                micRing.className = "w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center transition-all duration-300 shadow-md shadow-emerald-500/20 animate-pulse";
+            } else {
+                micVolumeText.innerText = "未接続";
+                micRing.className = "w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-400 transition-all duration-300";
+            }
+        }
+
+        function sendAudioChunk(base64Audio) {
+            const chunk = {
+                realtimeInput: {
+                    audio: {
+                        mimeType: "audio/pcm;rate=16000",
+                        data: base64Audio
+                    }
+                }
+            };
+            const chunkStr = JSON.stringify(chunk);
+            if (ws1 && ws1.readyState === WebSocket.OPEN && ws1Ready) {
+                ws1.send(chunkStr);
+            }
+            if (ws2 && ws2.readyState === WebSocket.OPEN && ws2Ready) {
+                ws2.send(chunkStr);
+            }
+        }
+
+        async function toggleSession() {
+            if (isSessionActive || isConnecting) {
+                stopBilingualSession();
+            } else {
+                await startBilingualSession();
+            }
+        }
+
+        async function startBilingualSession() {
+            const apiKey = apiKeyInput.value.trim();
+            if (!apiKey) {
+                showToast("APIキーを入力してください。", "error");
+                apiKeyInput.focus();
+                return;
+            }
+            
+            if (saveKeyCheckbox.checked) {
+                localStorage.setItem(KEY_STORAGE_NAME, apiKey);
+            } else {
+                localStorage.removeItem(KEY_STORAGE_NAME);
+            }
+            
+            isConnecting = true;
+            isManuallyStopped = false;
+            ws1Ready = false;
+            ws2Ready = false;
+            
+            statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> 接続中...';
+            statusBadge.className = "px-3 py-1 bg-amber-500/10 text-amber-400 text-xs rounded-full font-medium flex items-center gap-1.5 border border-amber-500/20";
+            toggleSessionBtn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> 接続中...';
+            toggleSessionBtn.className = "w-full bg-zinc-800 text-zinc-400 text-xs font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition duration-200 cursor-not-allowed";
+            
+            logDebug("セッション1 (JA → EN) の接続を開始します...", "info");
+            ws1 = connectLiveSocket(apiKey, "ja-en", "あなたは日本語から英語への翻訳者です。ユーザーが話す日本語をすべて正確に聞き取り、洗練された英語にリアルタイム翻訳してください。余計な説明や前置きは一切出力せず、英語の翻訳結果のみを出力してください。");
+            
+            logDebug("セッション2 (EN → JA) の接続を開始します...", "info");
+            ws2 = connectLiveSocket(apiKey, "en-ja", "You are an English to Japanese translator. Listen to English audio inputs, and translate them into natural Japanese in real-time. Output only the Japanese translation text directly, without any introduction or conversation.");
+        }
+
+        function stopBilingualSession() {
+            logDebug("セッションの切断を行っています...", "info");
+            isSessionActive = false;
+            isConnecting = false;
+            isAudioSendingReady = false;
+            
+            cleanupAudioNodes();
+            
+            if (ws1) {
+                try { ws1.close(); } catch(e){}
+                ws1 = null;
+            }
+            if (ws2) {
+                try { ws2.close(); } catch(e){}
+                ws2 = null;
+            }
+            
+            ws1Ready = false;
+            ws2Ready = false;
+            
+            statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-zinc-500"></span> 未接続';
+            statusBadge.className = "px-3 py-1 bg-zinc-800 text-zinc-400 text-xs rounded-full font-medium flex items-center gap-1.5 border border-white/5";
+            
+            toggleSessionBtn.innerHTML = '<i class="fa-solid fa-microphone"></i> 翻訳開始';
+            toggleSessionBtn.className = "w-full bg-gradient-to-r from-brand-600 to-fuchsia-600 hover:from-brand-500 hover:to-fuchsia-500 text-white text-xs font-semibold py-2.5 px-3 rounded-xl shadow-lg shadow-brand-600/10 flex items-center justify-center gap-2 transition duration-200 active:scale-[0.98]";
+            
+            logDebug("セッションが終了しました。", "info");
+            showToast("セッションを停止しました。", "info");
+        }
+
+        function connectLiveSocket(apiKey, sessionType, instruction) {
+            const apiVersion = "v1beta";
+            const modelName = "models/gemini-3.5-live-translate-preview";
+            const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.${apiVersion}.GenerativeService.BidiGenerateContent?key=${apiKey}`;
+            
+            let wsInstance;
+            try {
+                wsInstance = new WebSocket(wsUrl);
+            } catch (err) {
+                logDebug(`WebSocket 初期化エラー (${sessionType}): ${err.message}`, "error");
+                stopBilingualSession();
+                return null;
+            }
+            
+            wsInstance.onopen = () => {
+                logDebug(`WebSocket 接続確立 (${sessionType})。セットアップを送信します。`, "success");
+                const targetLang = sessionType === "ja-en" ? "en" : "ja";
+                const setupMessage = {
+                    setup: {
+                        model: modelName,
+                        generationConfig: {
+                            responseModalities: ["TEXT"],
+                            inputAudioTranscription: {},
+                            outputAudioTranscription: {},
+                            translationConfig: {
+                                targetLanguageCode: targetLang,
+                                echoTargetLanguage: true
+                            }
+                        },
+                        systemInstruction: {
+                            parts: [{
+                                text: instruction
+                            }]
+                        }
+                    }
+                };
+                wsInstance.send(JSON.stringify(setupMessage));
+            };
+            
+            wsInstance.onmessage = async (event) => {
+                try {
+                    let data;
+                    if (event.data instanceof Blob) {
+                        const text = await event.data.text();
+                        data = JSON.parse(text);
+                    } else {
+                        data = JSON.parse(event.data);
+                    }
+                    
+                    if (data.setupComplete) {
+                        logDebug(`セットアップ完了 (${sessionType})`, "success");
+                        if (sessionType === "ja-en") ws1Ready = true;
+                        if (sessionType === "en-ja") ws2Ready = true;
+                        
+                        checkAllSocketsReady();
+                    } else if (data.serverContent) {
+                        const content = data.serverContent;
+                        let text = "";
+                        if (content.outputTranscription && content.outputTranscription.text) {
+                            text = content.outputTranscription.text;
+                        } else if (content.modelTurn && content.modelTurn.parts) {
+                            for (const part of content.modelTurn.parts) {
+                                if (part.text) {
+                                    text += part.text;
+                                }
+                            }
+                        }
+                        if (text.trim()) {
+                            logDebug(`[受信 - ${sessionType.toUpperCase()}] ${text}`, "info");
+                            updateParallelTranscript(sessionType, text);
+                        }
+                    }
+                } catch (err) {
+                    logDebug(`メッセージ解析エラー (${sessionType}): ${err.message}`, "error");
+                }
+            };
+            
+            wsInstance.onerror = (e) => {
+                logDebug(`WebSocket エラー (${sessionType})`, "error");
+            };
+            
+            wsInstance.onclose = (e) => {
+                logDebug(`WebSocket 接続終了 (${sessionType}): コード ${e.code}`, "warning");
+                if (isSessionActive) {
+                    stopBilingualSession();
+                }
+            };
+            
+            return wsInstance;
+        }
+
+        async function checkAllSocketsReady() {
+            if (ws1Ready && ws2Ready) {
+                logDebug("全WebSocketセッションのセットアップが完了しました。音声システムを開始します。", "success");
+                
+                const micAllowed = await initAudioSystem();
+                if (micAllowed) {
+                    isSessionActive = true;
+                    isConnecting = false;
+                    isAudioSendingReady = true;
+                    
+                    statusBadge.innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span> 接続中 (音声入力中)';
+                    statusBadge.className = "px-3 py-1 bg-emerald-500/10 text-emerald-400 text-xs rounded-full font-medium flex items-center gap-1.5 border border-emerald-500/20";
+                    
+                    toggleSessionBtn.innerHTML = '<i class="fa-solid fa-square"></i> 翻訳停止';
+                    toggleSessionBtn.className = "w-full bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white text-xs font-semibold py-2.5 px-3 rounded-xl shadow-lg shadow-rose-600/10 flex items-center justify-center gap-2 transition duration-200 active:scale-[0.98]";
+                    
+                    showToast("双方向リアルタイム翻訳を開始しました！", "success");
+                } else {
+                    stopBilingualSession();
+                }
+            }
+        }
+
+        async function runSummary() {
+            const apiKey = apiKeyInput.value.trim();
+            if (!apiKey) {
+                showToast("APIキーがありません。", "error");
+                return;
+            }
+            
+            const transcript = getTranscriptMarkdownContent();
+            if (!transcript || transcript.trim() === "# 会話タイムライン (JA⇄EN)\n\n") {
+                showToast("要約する会話がありません。", "warning");
+                return;
+            }
+            
+            const model = document.getElementById("assistantModelSelect").value;
+            const summaryOutput = document.getElementById("summaryOutput");
+            summaryOutput.innerHTML = '<p class="text-zinc-500 italic text-center mt-6"><i class="fa-solid fa-spinner animate-spin mr-2"></i>会話を解析・要約中...</p>';
+            
+            const prompt = `以下はリアルタイム日英語翻訳の文字起こしデータです。この会話の重要ポイント、主要な話題、合意事項、アクションアイテムなどを整理し、日本語で簡潔かつ論理的に要約してください。\n\n${transcript}`;
+            
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${model}:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }]
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.candidates && data.candidates[0].content && data.candidates[0].content.parts[0].text) {
+                    const resText = data.candidates[0].content.parts[0].text;
+                    summaryOutput.innerHTML = `<div class="whitespace-pre-wrap leading-relaxed text-left text-zinc-300">${escapeHtml(resText)}</div>`;
+                } else {
+                    throw new Error("Invalid response format");
+                }
+            } catch (err) {
+                summaryOutput.innerHTML = `<p class="text-rose-400 italic text-center mt-6">要約の取得に失敗しました: ${err.message}</p>`;
+            }
+        }
+
+        async function askQuestion() {
+            const apiKey = apiKeyInput.value.trim();
+            if (!apiKey) {
+                showToast("APIキーがありません。", "error");
+                return;
+            }
+            
+            const qaInput = document.getElementById("qaInput");
+            const question = qaInput.value.trim();
+            if (!question) return;
+            
+            const qaOutput = document.getElementById("qaOutput");
+            
+            if (qaOutput.querySelector('.italic')) qaOutput.innerHTML = '';
+            
+            const qDiv = document.createElement("div");
+            qDiv.className = "mb-3 font-semibold text-amber-400 border-l-2 border-amber-500 pl-2 text-left";
+            qDiv.innerText = "Q: " + question;
+            qaOutput.appendChild(qDiv);
+            qaInput.value = "";
+            
+            const includeContext = document.getElementById("qaIncludeContext").checked;
+            const transcript = includeContext ? getTranscriptMarkdownContent() : "";
+            
+            const aDiv = document.createElement("div");
+            aDiv.className = "mb-4 whitespace-pre-wrap text-zinc-300 bg-white/5 p-2 rounded-lg leading-relaxed text-left";
+            aDiv.innerHTML = '<i class="fa-solid fa-spinner animate-spin mr-1"></i>回答を生成中...';
+            qaOutput.appendChild(aDiv);
+            qaOutput.scrollTop = qaOutput.scrollHeight;
+            
+            let prompt = "";
+            if (includeContext && transcript) {
+                prompt = `【会話コンテキスト】\n${transcript}\n\n【ユーザーからの質問】\n${question}\n\n上記の会話コンテキストに基づいて、質問に正確に回答してください。`;
+            } else {
+                prompt = question;
+            }
+            
+            const model = document.getElementById("assistantModelSelect").value;
+            
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${model}:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }]
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.candidates && data.candidates[0].content && data.candidates[0].content.parts[0].text) {
+                    const resText = data.candidates[0].content.parts[0].text;
+                    aDiv.innerText = resText;
+                } else {
+                    throw new Error("Invalid response format");
+                }
+            } catch (err) {
+                aDiv.className = "mb-4 text-rose-400 italic bg-rose-950/20 p-2 rounded-lg text-left";
+                aDiv.innerText = `エラー: 回答の取得に失敗しました (${err.message})`;
+            }
+            qaOutput.scrollTop = qaOutput.scrollHeight;
+        }
+        
+        function escapeHtml(string) {
+            if (typeof string !== 'string') {
+                return string;
+            }
+            return string.replace(/[&'`"<>]/g, function(match) {
+                return {
+                    '&': '&amp;',
+                    "'": '&#x27;',
+                    '`': '&#x60;',
+                    '"': '&quot;',
+                    '<': '&lt;',
+                    '>': '&gt;'
+                }[match]
+            });
+        }
+    </script>
+</body>
+</html>
