@@ -77,7 +77,7 @@
                         <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
                             Gemini Live Bilingual Translator
                             <span class="text-[9px] bg-brand-500/10 text-brand-400 border border-brand-500/20 px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider">AUDIO</span>
-                            <span id="app-version" class="text-[9px] bg-zinc-700/60 text-zinc-400 border border-zinc-600/40 px-2 py-0.5 rounded-full font-mono tracking-wider">v0.0.3</span>
+                            <span id="app-version" class="text-[9px] bg-zinc-700/60 text-zinc-400 border border-zinc-600/40 px-2 py-0.5 rounded-full font-mono tracking-wider">v0.0.4</span>
                         </h1>
                         <p class="text-[11px] text-zinc-400">超低遅延翻訳 ＆ AIアシスタント統合スタジオ</p>
                     </div>
@@ -1017,18 +1017,13 @@
             wsInstance.onopen = () => {
                 logDebug(`WebSocket 接続確立 (${sessionType})。セットアップを送信します。`, "success");
                 const targetLang = sessionType === "ja-en" ? "en" : "ja";
-                // 生のWebSocket APIはgRPCトランスコーディング経由のためsnake_caseを使用
+                
+                // 1007エラーの原因を絞り込むため、まずは最小構成（modelとgeneration_configのみ）を送信
                 const setupMessage = {
                     setup: {
                         model: modelName,
                         generation_config: {
                             response_modalities: ["AUDIO"]
-                        },
-                        input_audio_transcription: {},
-                        output_audio_transcription: {},
-                        translation_config: {
-                            target_language_code: targetLang,
-                            echo_target_language: true
                         }
                     }
                 };
@@ -1095,7 +1090,7 @@
             };
             
             wsInstance.onclose = (e) => {
-                logDebug(`WebSocket 接続終了 (${sessionType}): コード ${e.code}`, "warning");
+                logDebug(`WebSocket 接続終了 (${sessionType}): コード ${e.code} / 理由: ${e.reason || "なし"}`, "warning");
                 if (isSessionActive) {
                     stopBilingualSession();
                 }
