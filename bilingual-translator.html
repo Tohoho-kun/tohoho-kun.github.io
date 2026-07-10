@@ -690,6 +690,13 @@
             }, 2500);
         }
 
+        function updateParallelTranscriptRaw(sessionType, text) {
+            // 原文（入力音声の文字起こし）をデバッグログにのみ表示
+            // 必要に応じてUIに表示する場合はここを拡張
+            logDebug(`[原文 ${sessionType}] ${text}`, "info");
+        }
+
+
         function injectErrorNotice(title, details) {
             const isFileProtocol = window.location.protocol === 'file:';
             const isSecure = window.isSecureContext;
@@ -977,18 +984,13 @@
                     setup: {
                         model: modelName,
                         generationConfig: {
-                            responseModalities: ["TEXT"],
+                            responseModalities: ["AUDIO"],
                             inputAudioTranscription: {},
                             outputAudioTranscription: {},
                             translationConfig: {
                                 targetLanguageCode: targetLang,
                                 echoTargetLanguage: true
                             }
-                        },
-                        systemInstruction: {
-                            parts: [{
-                                text: instruction
-                            }]
                         }
                     }
                 };
@@ -1013,19 +1015,22 @@
                         checkAllSocketsReady();
                     } else if (data.serverContent) {
                         const content = data.serverContent;
-                        let text = "";
-                        if (content.outputTranscription && content.outputTranscription.text) {
-                            text = content.outputTranscription.text;
-                        } else if (content.modelTurn && content.modelTurn.parts) {
-                            for (const part of content.modelTurn.parts) {
-                                if (part.text) {
-                                    text += part.text;
-                                }
+                        // 翻訳の入力文字起こし（原文）
+                        if (content.inputTranscription && content.inputTranscription.text) {
+                            const inputText = content.inputTranscription.text.trim();
+                            if (inputText) {
+                                logDebug(`[原文 - ${sessionType.toUpperCase()}] ${inputText}`, "info");
+                                // 入力側のパネルに原文を表示
+                                updateParallelTranscriptRaw(sessionType, inputText);
                             }
                         }
-                        if (text.trim()) {
-                            logDebug(`[受信 - ${sessionType.toUpperCase()}] ${text}`, "info");
-                            updateParallelTranscript(sessionType, text);
+                        // 翻訳の出力文字起こし（訳文）
+                        if (content.outputTranscription && content.outputTranscription.text) {
+                            const outputText = content.outputTranscription.text.trim();
+                            if (outputText) {
+                                logDebug(`[訳文 - ${sessionType.toUpperCase()}] ${outputText}`, "info");
+                                updateParallelTranscript(sessionType, outputText);
+                            }
                         }
                     }
                 } catch (err) {
