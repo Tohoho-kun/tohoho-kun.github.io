@@ -77,7 +77,7 @@
                         <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
                             Gemini Live Bilingual Translator
                             <span class="text-[9px] bg-brand-500/10 text-brand-400 border border-brand-500/20 px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider">AUDIO</span>
-                            <span id="app-version" class="text-[9px] bg-zinc-700/60 text-zinc-400 border border-zinc-600/40 px-2 py-0.5 rounded-full font-mono tracking-wider">v0.0.2</span>
+                            <span id="app-version" class="text-[9px] bg-zinc-700/60 text-zinc-400 border border-zinc-600/40 px-2 py-0.5 rounded-full font-mono tracking-wider">v0.0.3</span>
                         </h1>
                         <p class="text-[11px] text-zinc-400">超低遅延翻訳 ＆ AIアシスタント統合スタジオ</p>
                     </div>
@@ -1017,20 +1017,18 @@
             wsInstance.onopen = () => {
                 logDebug(`WebSocket 接続確立 (${sessionType})。セットアップを送信します。`, "success");
                 const targetLang = sessionType === "ja-en" ? "en" : "ja";
-                // 正しい構造：inputAudioTranscription/outputAudioTranscription/translationConfig は
-                // generationConfig 内ではなく setup 直下に配置する
-                // generationConfig には responseModalities のみ
+                // 生のWebSocket APIはgRPCトランスコーディング経由のためsnake_caseを使用
                 const setupMessage = {
                     setup: {
                         model: modelName,
-                        generationConfig: {
-                            responseModalities: ["AUDIO"]
+                        generation_config: {
+                            response_modalities: ["AUDIO"]
                         },
-                        inputAudioTranscription: {},
-                        outputAudioTranscription: {},
-                        translationConfig: {
-                            targetLanguageCode: targetLang,
-                            echoTargetLanguage: true
+                        input_audio_transcription: {},
+                        output_audio_transcription: {},
+                        translation_config: {
+                            target_language_code: targetLang,
+                            echo_target_language: true
                         }
                     }
                 };
