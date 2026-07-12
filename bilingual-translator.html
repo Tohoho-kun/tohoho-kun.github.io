@@ -1565,7 +1565,6 @@
             const qDiv = document.createElement("div");
             qDiv.className = "mb-3 font-semibold text-amber-400 border-l-2 border-amber-500 pl-2 text-left";
             qDiv.innerText = "Q: " + question;
-            qaOutput.appendChild(qDiv);
             qaInput.value = "";
             
             const includeContext = document.getElementById("qaIncludeContext").checked;
@@ -1574,8 +1573,10 @@
             const aDiv = document.createElement("div");
             aDiv.className = "mb-4 whitespace-pre-wrap text-zinc-300 bg-white/5 p-2 rounded-lg leading-relaxed text-left";
             aDiv.innerHTML = '<i class="fa-solid fa-spinner animate-spin mr-1"></i>回答を生成中...';
-            qaOutput.appendChild(aDiv);
-            qaOutput.scrollTop = qaOutput.scrollHeight;
+            
+            qaOutput.prepend(aDiv);
+            qaOutput.prepend(qDiv);
+            qaOutput.scrollTop = 0;
             
             let prompt = "";
             if (includeContext && transcript) {
@@ -1606,7 +1607,7 @@
                 aDiv.className = "mb-4 text-rose-400 italic bg-rose-950/20 p-2 rounded-lg text-left";
                 aDiv.innerText = `エラー: 回答の取得に失敗しました (${err.message})`;
             }
-            qaOutput.scrollTop = qaOutput.scrollHeight;
+            qaOutput.scrollTop = 0;
         }
         
         function escapeHtml(string) {
