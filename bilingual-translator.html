@@ -63,7 +63,7 @@
         }
     </style>
 </head>
-<body class="h-screen flex flex-col antialiased overflow-hidden">
+<body class="min-h-[100dvh] xl:h-screen flex flex-col antialiased xl:overflow-hidden">
 
     <!-- ナビゲーションバー -->
     <header class="shrink-0 border-b border-white/5 bg-black/40 backdrop-blur-md relative z-40 px-6 py-3">
@@ -83,29 +83,35 @@
                     </div>
                 </div>
                 
-                <div class="hidden md:flex items-center gap-2 border-l border-white/10 pl-4 ml-2">
-                    <label class="text-[10px] text-zinc-400 font-medium whitespace-nowrap"><i class="fa-solid fa-brain text-indigo-400 mr-1"></i>使用モデル:</label>
-                    <select id="assistantModelSelect" class="bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 transition">
-                        <option value="models/gemini-3.1-flash-lite">Gemini 3.1 Flash Lite</option>
-                        <option value="models/gemma-4-26b-a4b-it">Gemma4 26B (MoE)</option>
-                        <option value="models/gemma-4-31b-it">Gemma4 31B</option>
-                    </select>
+                    <div class="hidden md:flex flex-col">
+                        <div class="flex items-center gap-2 border-l border-white/10 pl-4 ml-2">
+                            <label class="text-[10px] text-zinc-400 font-medium whitespace-nowrap"><i class="fa-solid fa-brain text-indigo-400 mr-1"></i><span data-i18n="model_label">使用モデル</span>:</label>
+                            <select id="assistantModelSelect" class="bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500 transition">
+                                <option value="models/gemini-3.1-flash-lite">Gemini 3.1 Flash Lite</option>
+                                <option value="models/gemma-4-26b-a4b-it">Gemma4 26B (MoE)</option>
+                                <option value="models/gemma-4-31b-it">Gemma4 31B</option>
+                            </select>
+                        </div>
+                        <span class="text-[9px] text-zinc-500 ml-5 mt-0.5" data-i18n="model_desc">※要約・Q&A専用</span>
+                    </div>
                 </div>
-            </div>
             
             <div class="flex items-center gap-4">
+                <select id="appLangSelect" class="bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-brand-500 transition" onchange="changeAppLanguage(this.value)">
+                    <option value="ja">日本語</option>
+                    <option value="en">English</option>
+                    <option value="es-419">Español (Latinoamérica)</option>
+                </select>
                 <div id="statusBadge" class="px-3 py-1 bg-zinc-800 text-zinc-400 text-xs rounded-full font-medium flex items-center gap-1.5 border border-white/5">
-                    <span class="w-2 h-2 rounded-full bg-zinc-500"></span> 未接続
-                </div>
+                    <span class="w-2 h-2 rounded-full bg-zinc-500"></span> <span data-i18n="not_connected">未接続</span></div>
                 <a href="#guideModal" onclick="openGuide()" class="text-sm text-zinc-400 hover:text-white transition flex items-center gap-1.5">
-                    <i class="fa-regular fa-circle-question"></i> 使い方
-                </a>
+                    <i class="fa-regular fa-circle-question"></i> <span data-i18n="guide_title">使い方</span></a>
             </div>
         </div>
     </header>
 
     <!-- メインコンテンツエリア (4カラム・フルハイトレイアウト) -->
-    <main class="flex-grow w-full max-w-[1920px] mx-auto p-4 grid grid-cols-1 xl:grid-cols-12 gap-4 min-h-0 overflow-y-auto xl:overflow-hidden">
+    <main class="flex-grow w-full max-w-[1920px] mx-auto p-4 grid grid-cols-1 xl:grid-cols-12 gap-4 min-h-0 xl:overflow-hidden">
         
         <!-- ============================================== -->
         <!-- 1. 左端ペイン: 設定パネル (xl:col-span-2) -->
@@ -114,10 +120,11 @@
             
             <div class="bg-zinc-900/60 border border-white/5 rounded-2xl p-4 backdrop-blur-md glowing-panel shrink-0">
                 <h2 class="text-sm font-semibold text-zinc-200 mb-3 flex items-center gap-2">
-                    <i class="fa-solid fa-key text-brand-400"></i> APIキー認証
+                    <i class="fa-solid fa-key text-brand-400"></i> <span data-i18n="api_key_title">Gemini APIキー認証</span>
                 </h2>
                 <div class="space-y-3">
-                    <div>
+                    <p class="text-[10px] text-red-400 font-bold bg-red-500/10 p-2 rounded-lg border border-red-500/20" data-i18n="api_key_warning">⚠️ 翻訳と要約の利用には Gemini API キーが必須です</p>
+                    <div class="relative group">
                         <div class="relative">
                             <input type="password" id="apiKeyInput" 
                                 class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm font-mono text-white placeholder-zinc-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/20 transition"
@@ -126,10 +133,19 @@
                                 <i id="eyeIcon" class="fa-regular fa-eye"></i>
                             </button>
                         </div>
+                        <div class="absolute -top-2 -right-2 w-5 h-5 bg-zinc-800 rounded-full flex items-center justify-center text-[10px] text-zinc-400 cursor-help group-hover:text-white transition">
+                            <i class="fa-solid fa-circle-info"></i>
+                        </div>
+                        <!-- ツールチップ (インフォマーク用) -->
+                        <div class="absolute z-50 right-0 top-full mt-2 w-64 bg-zinc-800 border border-white/10 rounded-xl p-3 shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all text-[10px] text-zinc-300 pointer-events-none">
+                            <strong class="text-white block mb-1" data-i18n="disclaimer_title">【重要なお知らせ】</strong>
+                            <p class="mb-1" data-i18n="disclaimer_billing">・Gemini APIキーの取得にはAIプラン等への課金・契約が必要になる可能性があります。</p>
+                            <p data-i18n="disclaimer_liability">・使用できるモデルに関するお問い合わせ対応や、本ツールの利用によって生じた損害等について、アプリ開発者は一切の責任を負いません。自己責任でご利用ください。</p>
+                        </div>
                     </div>
 
                     <div class="flex items-center justify-between pt-1">
-                        <span class="text-xs text-zinc-300 font-medium">キーを保存する</span>
+                        <span class="text-xs text-zinc-300 font-medium" data-i18n="save_key">キーを保存する</span>
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" id="saveKeyCheckbox" class="sr-only peer" checked>
                             <div class="w-8 h-4 bg-zinc-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-400 after:border-zinc-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-brand-600 peer-checked:after:bg-white"></div>
@@ -140,28 +156,52 @@
 
             <div class="bg-zinc-900/60 border border-white/5 rounded-2xl p-4 backdrop-blur-md glowing-panel shrink-0">
                 <h2 class="text-sm font-semibold text-zinc-200 mb-3 flex items-center gap-2">
-                    <i class="fa-solid fa-power-off text-brand-400"></i> コントロール
+                    <i class="fa-solid fa-power-off text-brand-400"></i> <span data-i18n="controls_title">コントロール</span>
                 </h2>
                 <div class="space-y-2">
+                    <!-- 追加: 言語選択 -->
+                    <div class="mb-3 space-y-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] text-zinc-400 font-medium w-12 text-right"><span data-i18n="lang1">第一言語</span></span>
+                            <select id="lang1Select" class="flex-grow bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-brand-500" onchange="handleLangSelectChange('lang1Select')"></select>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] text-zinc-400 font-medium w-12 text-right"><span data-i18n="lang2">第二言語</span></span>
+                            <select id="lang2Select" class="flex-grow bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-brand-500" onchange="handleLangSelectChange('lang2Select')"></select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3 p-3 bg-black/40 rounded-xl border border-white/5">
+                        <div class="flex justify-between items-center mb-2">
+                            <label for="micGainSlider" class="text-xs font-medium text-zinc-300 flex items-center gap-1.5"><i class="fa-solid fa-volume-high text-brand-400"></i> <span data-i18n="mic_gain">マイク入力倍率</span></label>
+                            <span id="micGainValue" class="text-[10px] text-zinc-400 font-mono bg-zinc-800 px-1.5 py-0.5 rounded">1.0x</span>
+                        </div>
+                        <input type="range" id="micGainSlider" min="0.1" max="5.0" step="0.1" value="1.0" class="w-full accent-brand-500">
+                    </div>
+
                     <button id="toggleSessionBtn" onclick="toggleSession()" 
                         class="w-full bg-gradient-to-r from-brand-600 to-fuchsia-600 hover:from-brand-500 hover:to-fuchsia-500 text-white text-xs font-semibold py-2.5 px-3 rounded-xl shadow-lg shadow-brand-600/10 flex items-center justify-center gap-2 transition duration-200 active:scale-[0.98]">
-                        <i class="fa-solid fa-microphone"></i> 翻訳開始
+                        <i class="fa-solid fa-microphone"></i> <span data-i18n="start_translate">翻訳開始</span>
                     </button>
+                    <div class="mt-2 text-[10px] text-zinc-500 bg-zinc-950/40 p-2 rounded-lg border border-white/5 flex items-start gap-1.5">
+                        <i class="fa-solid fa-bolt text-amber-500 mt-0.5"></i>
+                        <span data-i18n="live_translate_note">※音声翻訳には Gemini 3.5 Live Translate が使用されます。</span>
+                    </div>
+
 
                     <!-- 強制切断ボタン（常時表示・状態無関係） -->
                     <button id="forceDisconnectBtn" onclick="forceDisconnect()"
                         class="w-full bg-rose-950/60 hover:bg-rose-900/80 active:scale-[0.98] text-rose-400 hover:text-rose-300 text-xs font-semibold py-2.5 px-3 rounded-xl border border-rose-500/30 hover:border-rose-500/60 flex items-center justify-center gap-2 transition duration-200 shadow-inner">
-                        <i class="fa-solid fa-plug-circle-xmark"></i> 強制切断
+                        <i class="fa-solid fa-plug-circle-xmark"></i> <span data-i18n="force_disconnect">強制切断</span>
                     </button>
                     
                     <button id="resetLogBtn" onclick="clearSubtitlesAndLogs()" 
                         class="w-full bg-zinc-800/80 hover:bg-zinc-800 text-zinc-300 font-medium py-2 rounded-xl text-xs transition border border-white/5">
-                        履歴をクリア
-                    </button>
+                        <span data-i18n="clear_history">履歴をクリア</span></button>
                     
                     <button onclick="downloadAllMarkdown()" 
                         class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 rounded-xl text-xs transition flex items-center justify-center gap-1.5 border border-blue-500/30">
-                        <i class="fa-solid fa-file-arrow-down"></i> 全てをMD保存
+                        <i class="fa-solid fa-file-arrow-down"></i> <span data-i18n="save_md">全てをMD保存</span>
                     </button>
                 </div>
             </div>
@@ -171,9 +211,9 @@
                     <div class="bg-zinc-950/60 p-3 rounded-xl border border-white/5 space-y-1.5">
                         <p class="text-zinc-300 font-medium flex items-center gap-1.5 text-[11px]">
                             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                            セッション1 (JA → EN):
+                            <span id="session1DescTitle">セッション1 (JA → EN):</span>
                         </p>
-                        <p class="pl-3 border-l border-emerald-500/30 text-[10px]">
+                        <p id="session1DescText" class="pl-3 border-l border-emerald-500/30 text-[10px]">
                             日本語を英語へリアルタイム翻訳。
                         </p>
                     </div>
@@ -181,9 +221,9 @@
                     <div class="bg-zinc-950/60 p-3 rounded-xl border border-white/5 space-y-1.5">
                         <p class="text-zinc-300 font-medium flex items-center gap-1.5 text-[11px]">
                             <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-                            セッション2 (EN → JA):
+                            <span id="session2DescTitle">セッション2 (EN → JA):</span>
                         </p>
-                        <p class="pl-3 border-l border-indigo-500/30 text-[10px]">
+                        <p id="session2DescText" class="pl-3 border-l border-indigo-500/30 text-[10px]">
                             英語を日本語へリアルタイム翻訳。
                         </p>
                     </div>
@@ -204,8 +244,8 @@
                         <i class="fa-solid fa-microphone text-sm"></i>
                     </div>
                     <div>
-                        <p class="text-[10px] text-zinc-400 font-medium">マイク入力検知</p>
-                        <p id="micVolumeText" class="text-xs font-mono text-zinc-500">未接続</p>
+                        <p class="text-[10px] text-zinc-400 font-medium"><span data-i18n="mic_level">マイク入力検知</span></p>
+                        <p id="micVolumeText" class="text-xs font-mono text-zinc-500" data-i18n="mic_unconnected">未接続</p>
                     </div>
                 </div>
                 <!-- 簡易音量バー -->
@@ -215,11 +255,11 @@
             </div>
 
             <!-- リアルタイム・ライブ翻訳字幕 -->
-            <div class="bg-zinc-900/40 border border-white/5 rounded-2xl flex-grow flex flex-col min-h-0">
+            <div class="bg-zinc-900/40 border border-white/5 rounded-2xl flex-grow flex flex-col min-h-0 relative">
                 <div class="px-5 py-3 border-b border-white/5 flex items-center justify-between shrink-0">
                     <div class="flex items-center gap-2">
                         <span class="w-2.5 h-2.5 rounded-full bg-brand-500 animate-pulse"></span>
-                        <span class="text-xs font-semibold uppercase tracking-wider text-zinc-300">パラレル・テキスト字幕</span>
+                        <span class="text-xs font-semibold uppercase tracking-wider text-zinc-300"><span data-i18n="parallel_subtitle">パラレル・テキスト字幕</span></span>
                     </div>
                     <div class="flex items-center gap-3">
                         <span id="liveLanguageTag" class="text-[10px] bg-white/5 px-2 py-1 rounded font-mono text-zinc-400">JA→EN & EN→JA</span>
@@ -231,10 +271,15 @@
                 <div id="subtitlesContainer" class="flex-grow p-5 overflow-y-auto space-y-5 flex flex-col">
                     <div class="text-center py-16 text-zinc-500 flex flex-col items-center gap-3 font-medium my-auto">
                         <i class="fa-solid fa-comments text-4xl opacity-20"></i>
-                        <p class="text-sm text-zinc-300">ここに2つの翻訳セッション結果が並行して表示されます。</p>
-                        <p class="text-xs text-zinc-500 leading-relaxed">「翻訳セッションを開始」をクリックして話しかけてください。</p>
+                        <p class="text-sm text-zinc-300"><span id="subtitlePlaceholderTitle" data-i18n="subtitle_placeholder_title">ここに2つの翻訳セッション結果が並行して表示されます。</span></p>
+                        <p class="text-xs text-zinc-500 leading-relaxed"><span id="subtitlePlaceholderDesc" data-i18n="subtitle_placeholder_desc">「翻訳セッションを開始」をクリックして話しかけてください。</span></p>
                     </div>
                 </div>
+                
+                <!-- 最新追従ボタン -->
+                <button id="resumeScrollBtn" onclick="scrollSubtitlesToTop()" class="hidden absolute top-16 left-1/2 -translate-x-1/2 bg-brand-600/90 hover:bg-brand-500 text-white text-xs font-semibold py-2 px-4 rounded-full shadow-lg border border-white/10 backdrop-blur-md transition-all z-10 flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-up"></i> 最新を追従
+                </button>
             </div>
 
             <!-- デバッグ＆通信ログコンソール -->
@@ -261,17 +306,17 @@
             <div class="bg-zinc-900/60 border border-white/5 rounded-2xl flex flex-col backdrop-blur-md glowing-panel overflow-hidden h-full">
                 <div class="px-4 py-2.5 border-b border-white/5 bg-zinc-950/50 flex items-center justify-between shrink-0">
                     <h2 class="text-xs font-semibold text-zinc-200 flex items-center gap-2">
-                        <i class="fa-solid fa-list-check text-emerald-400"></i> 会話の要約
+                        <i class="fa-solid fa-list-check text-emerald-400"></i> <span data-i18n="summary_title">会話の要約</span>
                     </h2>
                     <div class="flex items-center gap-3">
                         <button onclick="runSummary()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-semibold px-2.5 py-1 rounded transition shadow-lg">
-                            今すぐ要約
+                            <span data-i18n="summarize_btn">今すぐ要約</span>
                         </button>
                         <button onclick="downloadSummaryMarkdown()" class="text-zinc-400 hover:text-white transition" title="要約をMarkdownで保存"><i class="fa-solid fa-download"></i></button>
                     </div>
                 </div>
                 <div id="summaryOutput" class="p-4 text-xs text-zinc-300 leading-relaxed overflow-y-auto flex-grow bg-black/20">
-                    <p class="text-zinc-500 italic text-center mt-6">「今すぐ要約」をクリックすると、<br>ここまでの文字起こしをAIがまとめます。</p>
+                    <p class="text-zinc-500 italic text-center mt-6" data-i18n="summary_empty_state">「今すぐ要約」をクリックすると、<br>ここまでの文字起こしをAIがまとめます。</p>
                 </div>
             </div>
 
@@ -286,32 +331,32 @@
             <div class="bg-zinc-900/60 border border-white/5 rounded-2xl flex flex-col backdrop-blur-md glowing-panel overflow-hidden h-full">
                 <div class="px-4 py-2.5 border-b border-white/5 bg-zinc-950/50 flex items-center justify-between shrink-0">
                     <h2 class="text-xs font-semibold text-zinc-200 flex items-center gap-2">
-                        <i class="fa-solid fa-clipboard-question text-amber-400"></i> AIに質問する
+                        <i class="fa-solid fa-clipboard-question text-amber-400"></i> <span data-i18n="ask_title">AIに質問する</span>
                     </h2>
                     <button onclick="downloadQaMarkdown()" class="text-zinc-400 hover:text-white transition" title="Q&AをMarkdownで保存"><i class="fa-solid fa-download"></i></button>
                 </div>
                 <div class="p-4 flex flex-col gap-3 flex-grow overflow-hidden min-h-0">
-                    <div id="qaOutput" class="flex-grow bg-black/40 rounded-xl p-3 text-xs text-zinc-300 border border-white/5 overflow-y-auto min-h-0">
-                        <p class="text-zinc-500 italic text-center mt-6">AIへの質問と回答が<br>ここに表示されます。</p>
-                    </div>
-                    
-                    <div class="flex flex-col gap-2 mt-auto pt-2 border-t border-white/5 shrink-0">
+                    <div class="flex flex-col gap-2 pb-2 border-b border-white/5 shrink-0">
                         <!-- 文字起こし送信トグル -->
                         <label class="flex items-center gap-2 cursor-pointer group mb-1">
                             <div class="relative flex items-center">
                                 <input type="checkbox" id="qaIncludeContext" class="sr-only peer" checked>
                                 <div class="w-8 h-4 bg-zinc-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-400 after:border-zinc-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-amber-600 peer-checked:after:bg-white"></div>
                             </div>
-                            <span class="text-[10px] text-zinc-400 group-hover:text-zinc-300 transition">全文字起こしをコンテキストに含める</span>
+                            <span class="text-[10px] text-zinc-400 group-hover:text-zinc-300 transition" data-i18n="qa_include_context">全文字起こしをコンテキストに含める</span>
                         </label>
                         
                         <!-- 質問入力フォーム -->
                         <div class="flex gap-2">
-                            <input type="text" id="qaInput" placeholder="例: さっきの数字は何？" class="flex-grow bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500 transition" onkeydown="if(event.key==='Enter') askQuestion()">
+                            <input type="text" id="qaInput" placeholder="例: さっきの数字は何？" data-i18n="ask_placeholder" class="flex-grow bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500 transition" onkeydown="if(event.key==='Enter') askQuestion()">
                             <button onclick="askQuestion()" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-2 rounded-lg text-xs transition shadow-lg shrink-0">
                                 <i class="fa-solid fa-paper-plane"></i>
                             </button>
                         </div>
+                    </div>
+
+                    <div id="qaOutput" class="flex-grow bg-black/40 rounded-xl p-3 text-xs text-zinc-300 border border-white/5 overflow-y-auto min-h-0">
+                        <p class="text-zinc-500 italic text-center mt-6" data-i18n="qa_empty_state">AIへの質問と回答が<br>ここに表示されます。</p>
                     </div>
                 </div>
             </div>
@@ -410,8 +455,268 @@
 
     <!-- JavaScript ロジック -->
     <script>
+        
+        const I18N = {
+            ja: {
+                model_label: "使用モデル",
+                model_desc: "※要約・Q&A専用",
+                api_key_title: "Gemini APIキー認証",
+                api_key_warning: "⚠️ 翻訳と要約の利用には Gemini API キーが必須です",
+                disclaimer_title: "【重要なお知らせ】",
+                disclaimer_billing: "・Gemini APIキーの取得にはAIプラン等への課金・契約が必要になる可能性があります。",
+                disclaimer_liability: "・使用できるモデルに関するお問い合わせ対応や、本ツールの利用によって生じた損害等について、アプリ開発者は一切の責任を負いません。自己責任でご利用ください。",
+                save_key: "キーを保存する",
+                controls_title: "コントロール",
+                lang1: "第一言語",
+                lang2: "第二言語",
+                mic_gain: "マイク入力倍率",
+                start_translate: "翻訳開始",
+                stop_translate: "翻訳停止",
+                force_disconnect: "強制切断",
+                clear_history: "履歴をクリア",
+                save_md: "全てをMD保存",
+                live_translate_note: "※音声翻訳には Gemini 3.5 Live Translate が使用されます。",
+                guide_title: "使い方",
+                not_connected: "未接続",
+                connected: "接続中",
+                mic_level: "マイク入力検知",
+                mic_unconnected: "未接続",
+                parallel_subtitle: "パラレル・テキスト字幕",
+                subtitle_placeholder_title: "ここに2つの翻訳セッション結果が並行して表示されます。",
+                subtitle_placeholder_desc: "「翻訳セッションを開始」をクリックして話しかけてください。",
+                auto_scroll: "最新に追従する",
+                summary_title: "会話の要約",
+                summarize_btn: "今すぐ要約",
+                summary_empty_state: "「今すぐ要約」をクリックすると、<br>ここまでの文字起こしをAIがまとめます。",
+                summary_prompt: "このテキストを要約してください",
+                ask_title: "AIに質問する",
+                qa_include_context: "全文字起こしをコンテキストに含める",
+                ask_placeholder: "例: さっきの数字は何？",
+                qa_empty_state: "AIへの質問と回答が<br>ここに表示されます。",
+                status_disconnected: "未接続",
+                status_connecting: "接続中...",
+                status_connected: "接続完了 (音声入力待機)",
+                toast_api_missing: "APIキーを入力してください。",
+                toast_api_started: "翻訳セッションを開始します...",
+                toast_api_stopped: "翻訳セッションを終了しました。",
+                toast_summarize_empty: "要約する会話がありません。",
+                toast_ask_empty: "質問を入力してください。",
+                toast_ask_no_context: "質問の背景となる会話がありません。"
+            },
+            en: {
+                model_label: "Model",
+                model_desc: "*For Summaries & Q&A",
+                api_key_title: "Gemini API Key Auth",
+                api_key_warning: "⚠️ A Gemini API Key is required for translation & summaries",
+                disclaimer_title: "[Important Notice]",
+                disclaimer_billing: "・Obtaining a Gemini API Key may require a paid AI plan subscription.",
+                disclaimer_liability: "・The developer assumes no responsibility for inquiries regarding models or any damages caused by using this tool. Use at your own risk.",
+                save_key: "Save Key",
+                controls_title: "Controls",
+                lang1: "Language 1",
+                lang2: "Language 2",
+                mic_gain: "Mic Gain",
+                start_translate: "Start Translating",
+                stop_translate: "Stop Translating",
+                force_disconnect: "Force Disconnect",
+                clear_history: "Clear History",
+                save_md: "Save All to MD",
+                live_translate_note: "*Voice translation is powered by Gemini 3.5 Live Translate.",
+                guide_title: "Guide",
+                not_connected: "Disconnected",
+                connected: "Connected",
+                mic_level: "Mic Input Level",
+                mic_unconnected: "Not Connected",
+                parallel_subtitle: "Parallel Text Subtitles",
+                subtitle_placeholder_title: "Two parallel translation sessions will appear here.",
+                subtitle_placeholder_desc: "Click 'Start Translating' and start speaking.",
+                auto_scroll: "Follow Latest",
+                summary_title: "Conversation Summary",
+                summarize_btn: "Summarize Now",
+                summary_empty_state: "Click 'Summarize Now' and AI will<br>summarize the transcript so far.",
+                summary_prompt: "Summarize this text",
+                ask_title: "Ask AI",
+                qa_include_context: "Include full transcript as context",
+                ask_placeholder: "e.g., What was that number?",
+                qa_empty_state: "AI questions and answers<br>will appear here.",
+                status_disconnected: "Disconnected",
+                status_connecting: "Connecting...",
+                status_connected: "Connected (Waiting for Audio)",
+                toast_api_missing: "Please enter an API Key.",
+                toast_api_started: "Starting translation session...",
+                toast_api_stopped: "Translation session stopped.",
+                toast_summarize_empty: "No conversation to summarize.",
+                toast_ask_empty: "Please enter a question.",
+                toast_ask_no_context: "No conversation context for your question."
+            },
+            "es-419": {
+                model_label: "Modelo",
+                model_desc: "*Solo para resúmenes y preguntas",
+                api_key_title: "Autenticación de Gemini API",
+                api_key_warning: "⚠️ Se requiere una clave de Gemini API para traducción y resúmenes",
+                disclaimer_title: "[Aviso Importante]",
+                disclaimer_billing: "・Obtener una clave de Gemini API puede requerir la suscripción a un plan de IA de pago.",
+                disclaimer_liability: "・El desarrollador no asume ninguna responsabilidad por consultas sobre los modelos ni por los daños causados por el uso de esta herramienta. Úselo bajo su propio riesgo.",
+                save_key: "Guardar Clave",
+                controls_title: "Controles",
+                lang1: "Idioma 1",
+                lang2: "Idioma 2",
+                mic_gain: "Ganancia del Mic",
+                start_translate: "Iniciar Traducción",
+                stop_translate: "Detener Traducción",
+                force_disconnect: "Forzar Desconexión",
+                clear_history: "Borrar Historial",
+                save_md: "Guardar todo en MD",
+                live_translate_note: "*La traducción por voz utiliza Gemini 3.5 Live Translate.",
+                guide_title: "Guía",
+                not_connected: "Desconectado",
+                connected: "Conectado",
+                mic_level: "Nivel de Micrófono",
+                mic_unconnected: "No Conectado",
+                parallel_subtitle: "Subtítulos en Texto Paralelo",
+                subtitle_placeholder_title: "Dos sesiones de traducción paralelas aparecerán aquí.",
+                subtitle_placeholder_desc: "Haga clic en 'Iniciar Traducción' y comience a hablar.",
+                auto_scroll: "Seguir el Más Reciente",
+                summary_title: "Resumen de Conversación",
+                summarize_btn: "Resumir Ahora",
+                summary_empty_state: "Haga clic en 'Resumir Ahora' y la IA<br>resumirá la transcripción hasta ahora.",
+                summary_prompt: "Resume este texto",
+                ask_title: "Preguntar a la IA",
+                qa_include_context: "Incluir transcripción completa como contexto",
+                ask_placeholder: "ej., ¿Cuál era ese número?",
+                qa_empty_state: "Las preguntas y respuestas de la IA<br>aparecerán aquí.",
+                status_disconnected: "Desconectado",
+                status_connecting: "Conectando...",
+                status_connected: "Conectado (Esperando Audio)",
+                toast_api_missing: "Por favor, introduzca una clave API.",
+                toast_api_started: "Iniciando sesión de traducción...",
+                toast_api_stopped: "Sesión de traducción detenida.",
+                toast_summarize_empty: "No hay conversación para resumir.",
+                toast_ask_empty: "Por favor, introduzca una pregunta.",
+                toast_ask_no_context: "No hay contexto de conversación para su pregunta."
+            }
+        };
+
+        let currentAppLang = 'ja';
+
+        function changeAppLanguage(lang) {
+            currentAppLang = lang;
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (I18N[lang] && I18N[lang][key]) {
+                    if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) {
+                        el.setAttribute('placeholder', I18N[lang][key]);
+                    } else {
+                        el.innerHTML = I18N[lang][key]; // innerHTML to preserve spans or icons if any (though we used spans for text)
+                    }
+                }
+            });
+            updateDynamicUILabels();
+            updateSubtitlesPlaceholder();
+        }
+
+        function updateSubtitlesPlaceholder() {
+            const el = document.getElementById('subtitlePlaceholderTitle');
+            const desc = document.getElementById('subtitlePlaceholderDesc');
+            if (el && desc && I18N[currentAppLang]) {
+                el.innerText = I18N[currentAppLang].subtitle_placeholder_title;
+                desc.innerText = I18N[currentAppLang].subtitle_placeholder_desc;
+            }
+        }
+        
+        function getI18nText(key) {
+            return (I18N[currentAppLang] && I18N[currentAppLang][key]) ? I18N[currentAppLang][key] : key;
+        }
+
         const KEY_STORAGE_NAME = "gemini_live_translate_api_key";
         
+        const MAJOR_LANGS = [
+            { code: 'ja', name: '日本語' },
+            { code: 'en', name: 'English' },
+            { code: 'zh-Hans', name: '中文 (簡体)' },
+            { code: 'zh-Hant', name: '中文 (繁体)' },
+            { code: 'ko', name: '한국어' },
+            { code: 'es', name: 'Español' },
+            { code: 'fr', name: 'Français' },
+            { code: 'de', name: 'Deutsch' },
+            { code: 'it', name: 'Italiano' },
+            { code: 'pt-BR', name: 'Português (BR)' },
+            { code: 'ru', name: 'Русский' },
+            { code: 'hi', name: 'हिन्दी (Hindi)' },
+            { code: 'ar', name: 'العربيّة (Arabic)' }
+        ];
+
+        const MINOR_LANGS = [
+            { code: 'af', name: 'Afrikaans' }, { code: 'ak', name: 'Akan' }, { code: 'sq', name: 'Albanian' }, { code: 'am', name: 'Amharic' }, { code: 'hy', name: 'Armenian' }, { code: 'az', name: 'Azerbaijani' }, { code: 'eu', name: 'Basque' }, { code: 'be', name: 'Belarusian' }, { code: 'bn', name: 'Bengali' }, { code: 'bg', name: 'Bulgarian' }, { code: 'my', name: 'Burmese' }, { code: 'ca', name: 'Catalan' }, { code: 'hr', name: 'Croatian' }, { code: 'cs', name: 'Czech' }, { code: 'da', name: 'Danish' }, { code: 'nl', name: 'Dutch' }, { code: 'fi', name: 'Finnish' }, { code: 'el', name: 'Greek' }, { code: 'he', name: 'Hebrew' }, { code: 'hu', name: 'Hungarian' }, { code: 'id', name: 'Indonesian' }, { code: 'lv', name: 'Latvian' }, { code: 'lt', name: 'Lithuanian' }, { code: 'no', name: 'Norwegian' }, { code: 'pl', name: 'Polish' }, { code: 'ro', name: 'Romanian' }, { code: 'sr', name: 'Serbian' }, { code: 'sk', name: 'Slovak' }, { code: 'sl', name: 'Slovenian' }, { code: 'sw', name: 'Swahili' }, { code: 'sv', name: 'Swedish' }, { code: 'th', name: 'Thai' }, { code: 'tr', name: 'Turkish' }, { code: 'uk', name: 'Ukrainian' }, { code: 'vi', name: 'Vietnamese' }
+        ];
+
+        let lang1Code = 'ja';
+        let lang2Code = 'en';
+
+        function getLangName(code) {
+            const l = MAJOR_LANGS.find(x => x.code === code) || MINOR_LANGS.find(x => x.code === code);
+            return l ? l.name : code;
+        }
+
+        function populateLangSelects(showMinor = false) {
+            const lang1 = document.getElementById('lang1Select');
+            const lang2 = document.getElementById('lang2Select');
+            if (!lang1 || !lang2) return;
+            
+            let html = '';
+            MAJOR_LANGS.forEach(l => {
+                html += `<option value="${l.code}">${l.name}</option>`;
+            });
+            if (showMinor) {
+                html += `<optgroup label="その他の言語">`;
+                MINOR_LANGS.forEach(l => {
+                    html += `<option value="${l.code}">${l.name}</option>`;
+                });
+                html += `</optgroup>`;
+            } else {
+                html += `<option value="_more">その他の言語を表示...</option>`;
+            }
+            lang1.innerHTML = html;
+            lang2.innerHTML = html;
+            
+            lang1.value = lang1Code;
+            lang2.value = lang2Code;
+            
+            updateDynamicUILabels();
+        }
+
+        function updateDynamicUILabels() {
+            const name1 = getLangName(lang1Code);
+            const name2 = getLangName(lang2Code);
+            const code1 = lang1Code.toUpperCase();
+            const code2 = lang2Code.toUpperCase();
+            
+            const s1Title = document.getElementById('session1DescTitle');
+            const s1Text = document.getElementById('session1DescText');
+            const s2Title = document.getElementById('session2DescTitle');
+            const s2Text = document.getElementById('session2DescText');
+            const liveTag = document.getElementById('liveLanguageTag');
+            
+            if (s1Title) s1Title.innerText = `セッション1 (${code1} → ${code2}):`;
+            if (s1Text) s1Text.innerText = `${name1}を${name2}へリアルタイム翻訳。`;
+            if (s2Title) s2Title.innerText = `セッション2 (${code2} → ${code1}):`;
+            if (s2Text) s2Text.innerText = `${name2}を${name1}へリアルタイム翻訳。`;
+            if (liveTag) liveTag.innerText = `${code1}→${code2} & ${code2}→${code1}`;
+        }
+
+        function handleLangSelectChange(selectId) {
+            const select = document.getElementById(selectId);
+            if (select.value === '_more') {
+                populateLangSelects(true);
+                return;
+            }
+            lang1Code = document.getElementById('lang1Select').value;
+            lang2Code = document.getElementById('lang2Select').value;
+            localStorage.setItem('translate_lang1', lang1Code);
+            localStorage.setItem('translate_lang2', lang2Code);
+            updateDynamicUILabels();
+        }
+
         let ws1 = null;
         let ws2 = null;
         let ws1Ready = false;
@@ -447,10 +752,30 @@
         const micRing = document.getElementById("micRing");
 
         window.addEventListener("DOMContentLoaded", () => {
+            const userLang = navigator.language.toLowerCase();
+            let initialLang = 'en';
+            if (userLang.startsWith('ja')) initialLang = 'ja';
+            else if (userLang.startsWith('es')) initialLang = 'es-419';
+            
+            const langSelect = document.getElementById('appLangSelect');
+            if (langSelect) langSelect.value = initialLang;
+            changeAppLanguage(initialLang);
+
             const savedKey = localStorage.getItem(KEY_STORAGE_NAME);
             if (savedKey) {
                 apiKeyInput.value = savedKey;
             }
+
+            const savedLang1 = localStorage.getItem('translate_lang1');
+            const savedLang2 = localStorage.getItem('translate_lang2');
+            if (savedLang1) lang1Code = savedLang1;
+            if (savedLang2) lang2Code = savedLang2;
+            
+            let needsMinor = false;
+            if (MINOR_LANGS.find(x => x.code === lang1Code) || MINOR_LANGS.find(x => x.code === lang2Code)) {
+                needsMinor = true;
+            }
+            populateLangSelects(needsMinor);
             
             const isFileProtocol = window.location.protocol === 'file:';
             const isSecure = window.isSecureContext;
@@ -460,7 +785,47 @@
                 showToast("現在の環境ではマイクが使えません。解決方法を確認してください。", "warning");
                 setTimeout(openLocalServerGuide, 600);
             }
+            
+            const micGainSlider = document.getElementById("micGainSlider");
+            const micGainValue = document.getElementById("micGainValue");
+            if (micGainSlider && micGainValue) {
+                const urlParams = new URLSearchParams(window.location.search);
+                const volgainParam = urlParams.get("volgain");
+                if (volgainParam) {
+                    let parsedGain = parseFloat(volgainParam.replace(/x/gi, '').replace(/_/g, '.'));
+                    if (!isNaN(parsedGain) && parsedGain >= 0.1 && parsedGain <= 5.0) {
+                        micGainSlider.value = parsedGain;
+                    }
+                }
+                
+                micGainValue.innerText = parseFloat(micGainSlider.value).toFixed(1) + "x";
+
+                micGainSlider.addEventListener("input", (e) => {
+                    micGainValue.innerText = parseFloat(e.target.value).toFixed(1) + "x";
+                });
+            }
+
+            if (subtitlesContainer) {
+                subtitlesContainer.addEventListener("scroll", () => {
+                    if (subtitlesContainer.scrollTop > 10) {
+                        isAutoScrollEnabled = false;
+                        document.getElementById("resumeScrollBtn").classList.remove("hidden");
+                    } else if (subtitlesContainer.scrollTop <= 10) {
+                        isAutoScrollEnabled = true;
+                        document.getElementById("resumeScrollBtn").classList.add("hidden");
+                    }
+                });
+            }
         });
+
+        let isAutoScrollEnabled = true;
+        function scrollSubtitlesToTop() {
+            isAutoScrollEnabled = true;
+            document.getElementById("resumeScrollBtn").classList.add("hidden");
+            if (subtitlesContainer) {
+                subtitlesContainer.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
 
         // 共通Markdown保存処理
         function downloadMarkdown(content, filename) {
@@ -486,17 +851,20 @@
 
         // 文字起こしのMD生成
         function getTranscriptMarkdownContent() {
-            let md = "# 会話タイムライン (JA⇄EN)\n\n";
+            let md = `# 会話タイムライン (${lang1Code.toUpperCase()}⇄${lang2Code.toUpperCase()})\n\n`;
             const turns = subtitlesContainer.querySelectorAll('[data-role="parallel-turn"]');
             if (turns.length === 0) return "";
             
+            const l1_l2 = `${lang1Code}-${lang2Code}`;
+            const l2_l1 = `${lang2Code}-${lang1Code}`;
+            
             turns.forEach((turn, index) => {
-                const jaEn = turn.querySelector('.translation-text-ja-en')?.innerText || "";
-                const enJa = turn.querySelector('.translation-text-en-ja')?.innerText || "";
-                if (jaEn !== "..." || enJa !== "...") {
+                const text1 = turn.querySelector(`.translation-text-${l1_l2}`)?.innerText || "";
+                const text2 = turn.querySelector(`.translation-text-${l2_l1}`)?.innerText || "";
+                if (text1 !== "..." || text2 !== "...") {
                     md += `### ターン ${index + 1}\n`;
-                    if (jaEn !== "...") md += `- **[JA→EN]**: ${jaEn}\n`;
-                    if (enJa !== "...") md += `- **[EN→JA]**: ${enJa}\n`;
+                    if (text1 !== "...") md += `- **[${lang1Code.toUpperCase()}→${lang2Code.toUpperCase()}]**: ${text1}\n`;
+                    if (text2 !== "...") md += `- **[${lang2Code.toUpperCase()}→${lang1Code.toUpperCase()}]**: ${text2}\n`;
                     md += "\n";
                 }
             });
@@ -656,9 +1024,9 @@
         let turnCompleteTimeout = null;
 
         function getOrCreateParallelSubtitleBox() {
-            const lastChild = subtitlesContainer.lastElementChild;
-            if (lastChild && lastChild.dataset.role === "parallel-turn" && !lastChild.dataset.completed) {
-                return lastChild;
+            const firstChild = subtitlesContainer.firstElementChild;
+            if (firstChild && firstChild.dataset.role === "parallel-turn" && !firstChild.dataset.completed) {
+                return firstChild;
             }
             const box = document.createElement("div");
             box.dataset.role = "parallel-turn";
@@ -666,18 +1034,18 @@
             box.innerHTML = `
                 <div class="grid grid-cols-2 gap-4">
                     <div class="flex flex-col gap-1">
-                        <span class="text-[10px] font-bold text-emerald-400 flex items-center gap-1.5"><i class="fa-solid fa-language"></i> JA → EN</span>
-                        <p class="translation-text-ja-en text-sm text-zinc-100 font-semibold whitespace-pre-wrap leading-relaxed">...</p>
+                        <span class="text-[10px] font-bold text-emerald-400 flex items-center gap-1.5"><i class="fa-solid fa-language"></i> ${lang1Code.toUpperCase()} → ${lang2Code.toUpperCase()}</span>
+                        <p class="translation-text-${lang1Code}-${lang2Code} text-sm text-zinc-100 font-semibold whitespace-pre-wrap leading-relaxed">...</p>
                     </div>
                     <div class="flex flex-col gap-1 border-l border-white/5 pl-4">
-                        <span class="text-[10px] font-bold text-indigo-400 flex items-center gap-1.5"><i class="fa-solid fa-language"></i> EN → JA</span>
-                        <p class="translation-text-en-ja text-sm text-zinc-100 font-semibold whitespace-pre-wrap leading-relaxed">...</p>
+                        <span class="text-[10px] font-bold text-indigo-400 flex items-center gap-1.5"><i class="fa-solid fa-language"></i> ${lang2Code.toUpperCase()} → ${lang1Code.toUpperCase()}</span>
+                        <p class="translation-text-${lang2Code}-${lang1Code} text-sm text-zinc-100 font-semibold whitespace-pre-wrap leading-relaxed">...</p>
                     </div>
                 </div>
             `;
             if (subtitlesContainer.querySelector('.text-center')) subtitlesContainer.innerHTML = '';
-            subtitlesContainer.appendChild(box);
-            subtitlesContainer.scrollTop = subtitlesContainer.scrollHeight;
+            subtitlesContainer.prepend(box);
+            if (isAutoScrollEnabled) subtitlesContainer.scrollTop = 0;
             return box;
         }
 
@@ -688,7 +1056,7 @@
                 if (p.innerText === "...") p.innerText = text;
                 else p.innerText += text;
             }
-            subtitlesContainer.scrollTop = subtitlesContainer.scrollHeight;
+            if (isAutoScrollEnabled) subtitlesContainer.scrollTop = 0;
             
             if (turnCompleteTimeout) clearTimeout(turnCompleteTimeout);
             turnCompleteTimeout = setTimeout(() => {
@@ -728,8 +1096,8 @@
                 </div>
             `;
             if (subtitlesContainer.querySelector('.text-center')) subtitlesContainer.innerHTML = '';
-            subtitlesContainer.appendChild(box);
-            subtitlesContainer.scrollTop = subtitlesContainer.scrollHeight;
+            subtitlesContainer.prepend(box);
+            if (isAutoScrollEnabled) subtitlesContainer.scrollTop = 0;
         }
 
         async function initAudioSystem() {
@@ -771,7 +1139,8 @@
                     if (!isSessionActive || !isAudioSendingReady) return;
                     const inputBuffer = e.inputBuffer.getChannelData(0);
                     
-                    const gainMultiplier = 3.0; 
+                    const gainSlider = document.getElementById("micGainSlider");
+                    const gainMultiplier = gainSlider ? parseFloat(gainSlider.value) : 1.0;
                     let sum = 0;
                     for (let i = 0; i < inputBuffer.length; i++) {
                         inputBuffer[i] *= gainMultiplier;
@@ -923,14 +1292,14 @@
             
             statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> 接続中...';
             statusBadge.className = "px-3 py-1 bg-amber-500/10 text-amber-400 text-xs rounded-full font-medium flex items-center gap-1.5 border border-amber-500/20";
-            toggleSessionBtn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> 接続中...';
+            toggleSessionBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> ${getI18nText("status_connecting")}`;
             toggleSessionBtn.className = "w-full bg-zinc-800 text-zinc-400 text-xs font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition duration-200 cursor-not-allowed";
             
-            logDebug("セッション1 (JA → EN) の接続を開始します...", "info");
-            ws1 = connectLiveSocket(apiKey, "ja-en", "あなたは日本語から英語への翻訳者です。ユーザーが話す日本語をすべて正確に聞き取り、洗練された英語にリアルタイム翻訳してください。余計な説明や前置きは一切出力せず、英語の翻訳結果のみを出力してください。");
+            logDebug(`セッション1 (${lang1Code.toUpperCase()} → ${lang2Code.toUpperCase()}) の接続を開始します...`, "info");
+            ws1 = connectLiveSocket(apiKey, lang1Code, lang2Code);
             
-            logDebug("セッション2 (EN → JA) の接続を開始します...", "info");
-            ws2 = connectLiveSocket(apiKey, "en-ja", "You are an English to Japanese translator. Listen to English audio inputs, and translate them into natural Japanese in real-time. Output only the Japanese translation text directly, without any introduction or conversation.");
+            logDebug(`セッション2 (${lang2Code.toUpperCase()} → ${lang1Code.toUpperCase()}) の接続を開始します...`, "info");
+            ws2 = connectLiveSocket(apiKey, lang2Code, lang1Code);
         }
 
         function stopBilingualSession() {
@@ -956,7 +1325,7 @@
             statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-zinc-500"></span> 未接続';
             statusBadge.className = "px-3 py-1 bg-zinc-800 text-zinc-400 text-xs rounded-full font-medium flex items-center gap-1.5 border border-white/5";
             
-            toggleSessionBtn.innerHTML = '<i class="fa-solid fa-microphone"></i> 翻訳開始';
+            toggleSessionBtn.innerHTML = '<i class="fa-solid fa-microphone"></i> <span data-i18n="start_translate">翻訳開始</span>';
             toggleSessionBtn.className = "w-full bg-gradient-to-r from-brand-600 to-fuchsia-600 hover:from-brand-500 hover:to-fuchsia-500 text-white text-xs font-semibold py-2.5 px-3 rounded-xl shadow-lg shadow-brand-600/10 flex items-center justify-center gap-2 transition duration-200 active:scale-[0.98]";
             
             logDebug("セッションが終了しました。", "info");
@@ -991,7 +1360,7 @@
             statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-zinc-500"></span> 未接続';
             statusBadge.className = "px-3 py-1 bg-zinc-800 text-zinc-400 text-xs rounded-full font-medium flex items-center gap-1.5 border border-white/5";
 
-            toggleSessionBtn.innerHTML = '<i class="fa-solid fa-microphone"></i> 翻訳開始';
+            toggleSessionBtn.innerHTML = '<i class="fa-solid fa-microphone"></i> <span data-i18n="start_translate">翻訳開始</span>';
             toggleSessionBtn.disabled = false;
             toggleSessionBtn.className = "w-full bg-gradient-to-r from-brand-600 to-fuchsia-600 hover:from-brand-500 hover:to-fuchsia-500 text-white text-xs font-semibold py-2.5 px-3 rounded-xl shadow-lg shadow-brand-600/10 flex items-center justify-center gap-2 transition duration-200 active:scale-[0.98]";
 
@@ -999,10 +1368,11 @@
             showToast("API接続を強制切断しました。", "warning");
         }
 
-        function connectLiveSocket(apiKey, sessionType, instruction) {
+        function connectLiveSocket(apiKey, sourceLang, targetLang) {
             // 公式ドキュメント通り v1beta を使用
             const apiVersion = "v1beta";
             const modelName = "models/gemini-3.5-live-translate-preview";
+            const sessionType = `${sourceLang}-${targetLang}`;
             const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.${apiVersion}.GenerativeService.BidiGenerateContent?key=${apiKey}`;
             
             let wsInstance;
@@ -1016,7 +1386,6 @@
             
             wsInstance.onopen = () => {
                 logDebug(`WebSocket 接続確立 (${sessionType})。セットアップを送信します。`, "success");
-                const targetLang = sessionType === "ja-en" ? "en" : "ja";
                 
                 // v0.0.8: inputAudioTranscription と outputAudioTranscription を setup 直下（camelCase）に配置して検証
                 const setupMessage = {
@@ -1049,8 +1418,8 @@
                     
                     if (data.setupComplete) {
                         logDebug(`セットアップ完了 (${sessionType})`, "success");
-                        if (sessionType === "ja-en") ws1Ready = true;
-                        if (sessionType === "en-ja") ws2Ready = true;
+                        if (sessionType === `${lang1Code}-${lang2Code}`) ws1Ready = true;
+                        if (sessionType === `${lang2Code}-${lang1Code}`) ws2Ready = true;
                         checkAllSocketsReady();
                     } else if (data.serverContent) {
                         const content = data.serverContent;
@@ -1137,7 +1506,7 @@
             
             const transcript = getTranscriptMarkdownContent();
             if (!transcript || transcript.trim() === "# 会話タイムライン (JA⇄EN)\n\n") {
-                showToast("要約する会話がありません。", "warning");
+                showToast(getI18nText("toast_summarize_empty"), "warning");
                 return;
             }
             
