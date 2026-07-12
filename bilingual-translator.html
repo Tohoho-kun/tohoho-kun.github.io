@@ -1265,6 +1265,7 @@
 
         async function toggleSession() {
             if (isSessionActive || isConnecting) {
+                isManuallyStopped = true;
                 stopBilingualSession();
             } else {
                 await startBilingualSession();
@@ -1337,6 +1338,7 @@
             logDebug("[強制切断] API接続を強制終了します...", "warning");
 
             // フラグを即座にリセット（進行中の送信ループを停止）
+            isManuallyStopped = true;
             isSessionActive = false;
             isConnecting = false;
             isAudioSendingReady = false;
@@ -1466,7 +1468,15 @@
             
             wsInstance.onclose = (e) => {
                 logDebug(`WebSocket 接続終了 (${sessionType}): コード ${e.code} / 理由: ${e.reason || "なし"}`, "warning");
-                if (isSessionActive) {
+                if (isSessionActive && !isManuallyStopped) {
+                    logDebug("セッション制限時間到達（または予期せぬ切断）を検知しました。自動再接続を試みます...", "warning");
+                    isManuallyStopped = true; // 再帰的な再接続を防ぐ
+                    stopBilingualSession();
+                    showToast("APIの制限時間到達による自動再接続を行います...", "info");
+                    setTimeout(() => {
+                        startBilingualSession();
+                    }, 1500);
+                } else if (isSessionActive) {
                     stopBilingualSession();
                 }
             };
