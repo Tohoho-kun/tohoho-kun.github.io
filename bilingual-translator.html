@@ -348,7 +348,7 @@
                         
                         <!-- 質問入力フォーム -->
                         <div class="flex gap-2">
-                            <input type="text" id="qaInput" placeholder="例: さっきの数字は何？" data-i18n="ask_placeholder" class="flex-grow bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500 transition" onkeydown="if(event.key==='Enter') askQuestion()">
+                            <input type="text" id="qaInput" placeholder="例: さっきの数字は何？" data-i18n="ask_placeholder" class="flex-grow bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500 transition" onkeydown="if(event.key==='Enter' && !event.isComposing) askQuestion()">
                             <button onclick="askQuestion()" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-2 rounded-lg text-xs transition shadow-lg shrink-0">
                                 <i class="fa-solid fa-paper-plane"></i>
                             </button>
