@@ -1312,7 +1312,12 @@
                 let errMessage = err.message || "";
                 let errorDetails = errName ? `${errName}: ${errMessage}` : (errMessage || "Unknown Error");
                 
-                logDebug(`音声システムの起動失敗: ${errorDetails}`, "e        async function startBilingualSession() {
+                logDebug(`音声システムの起動失敗: ${errorDetails}`, "error");
+                return false;
+            }
+        }
+
+        async function startBilingualSession() {
             let apiKey = "";
             let vertexConfig = null;
             
