@@ -188,8 +188,20 @@
                         <span data-i18n="live_translate_note">※音声翻訳には Gemini 3.5 Live Translate が使用されます。</span>
                     </div>
 
-
                     <!-- 強制切断ボタン（常時表示・状態無関係） -->
+                    <div id="timerDisplayContainer" class="hidden flex-col gap-1.5 my-2">
+                        <div class="flex justify-between items-center bg-zinc-950/40 px-3 py-2 rounded-lg border border-white/5">
+                            <span class="text-[10px] text-zinc-400 font-medium">トータル時間</span>
+                            <span id="totalTimeDisplay" class="text-xs text-brand-400 font-mono font-bold">00:00</span>
+                        </div>
+                        <div class="flex justify-between items-center bg-zinc-950/40 px-3 py-2 rounded-lg border border-white/5 relative group">
+                            <span class="text-[10px] text-zinc-400 font-medium">現在セッション</span>
+                            <span id="sessionTimeDisplay" class="text-xs text-amber-400 font-mono font-bold">00:00</span>
+                        </div>
+                        <div id="lapLogContainer" class="text-[10px] text-zinc-500 font-mono space-y-1 mt-1 max-h-24 overflow-y-auto px-1">
+                        </div>
+                    </div>
+
                     <button id="forceDisconnectBtn" onclick="forceDisconnect()"
                         class="w-full bg-rose-950/60 hover:bg-rose-900/80 active:scale-[0.98] text-rose-400 hover:text-rose-300 text-xs font-semibold py-2.5 px-3 rounded-xl border border-rose-500/30 hover:border-rose-500/60 flex items-center justify-center gap-2 transition duration-200 shadow-inner">
                         <i class="fa-solid fa-plug-circle-xmark"></i> <span data-i18n="force_disconnect">強制切断</span>
@@ -737,7 +749,28 @@
         // クライアント側無音検知 (VAD) 用の変数
         let silenceTimer = null;
         let isSpeaking = false;
+        
+        let totalStartTime = null;
+        let sessionStartTime = null;
+        let timerInterval = null;
+        let laps = [];
 
+        function formatTime(ms) {
+            if (!ms || ms < 0) return "00:00";
+            const totalSec = Math.floor(ms / 1000);
+            const m = Math.floor(totalSec / 60);
+            const s = totalSec % 60;
+            return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        function updateTimers() {
+            if (totalStartTime) {
+                document.getElementById('totalTimeDisplay').innerText = formatTime(Date.now() - totalStartTime);
+            }
+            if (sessionStartTime) {
+                document.getElementById('sessionTimeDisplay').innerText = formatTime(Date.now() - sessionStartTime);
+            }
+        }
         // UIバインディング
         const apiKeyInput = document.getElementById("apiKeyInput");
         const saveKeyCheckbox = document.getElementById("saveKeyCheckbox");
@@ -1268,6 +1301,11 @@
                 isManuallyStopped = true;
                 stopBilingualSession();
             } else {
+                totalStartTime = null;
+                laps = [];
+                document.getElementById('lapLogContainer').innerHTML = '';
+                document.getElementById('timerDisplayContainer').classList.remove('hidden');
+                document.getElementById('timerDisplayContainer').classList.add('flex');
                 await startBilingualSession();
             }
         }
@@ -1291,6 +1329,12 @@
             ws1Ready = false;
             ws2Ready = false;
             
+            if (!totalStartTime) totalStartTime = Date.now();
+            sessionStartTime = Date.now();
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimers, 1000);
+            updateTimers();
+            
             statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> 接続中...';
             statusBadge.className = "px-3 py-1 bg-amber-500/10 text-amber-400 text-xs rounded-full font-medium flex items-center gap-1.5 border border-amber-500/20";
             toggleSessionBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> ${getI18nText("status_connecting")}`;
@@ -1308,6 +1352,11 @@
             isSessionActive = false;
             isConnecting = false;
             isAudioSendingReady = false;
+            
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
             
             cleanupAudioNodes();
             
@@ -1471,6 +1520,17 @@
                 if (isSessionActive && !isManuallyStopped) {
                     logDebug("セッション制限時間到達（または予期せぬ切断）を検知しました。自動再接続を試みます...", "warning");
                     isManuallyStopped = true; // 再帰的な再接続を防ぐ
+                    
+                    if (sessionStartTime) {
+                        const lapTime = Date.now() - sessionStartTime;
+                        const lapFormatted = formatTime(lapTime);
+                        laps.push(lapFormatted);
+                        const lapEl = document.createElement("div");
+                        lapEl.className = "flex justify-between items-center bg-black/20 px-2 py-1 rounded";
+                        lapEl.innerHTML = `<span>[Lap ${laps.length}]</span> <span>${lapFormatted}</span>`;
+                        document.getElementById('lapLogContainer').prepend(lapEl);
+                    }
+                    
                     stopBilingualSession();
                     showToast("APIの制限時間到達による自動再接続を行います...", "info");
                     setTimeout(() => {
