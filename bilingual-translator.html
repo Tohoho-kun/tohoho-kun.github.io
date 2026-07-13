@@ -1465,7 +1465,7 @@
                 const token = vertexConfig.token;
                 const proj = vertexConfig.projectId;
                 const model = vertexConfig.modelId;
-                wsUrl = `wss://${loc}-aiplatform.googleapis.com/ws/google.cloud.aiplatform.v1.LlmBidiService/BidiGenerateContent?access_token=${token}`;
+                wsUrl = `wss://${loc}-aiplatform.googleapis.com/ws/google.cloud.aiplatform.v1beta1.LlmBidiService/BidiGenerateContent?access_token=${token}`;
                 modelName = `projects/${proj}/locations/${loc}/publishers/google/models/${model}`;
             } else {
                 const apiVersion = "v1beta";
