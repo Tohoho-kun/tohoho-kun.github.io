@@ -81,7 +81,7 @@
                         <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
                             Gemini Live Bilingual Translator
                             <span class="text-[9px] bg-brand-500/10 text-brand-400 border border-brand-500/20 px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider">AUDIO</span>
-                            <span id="app-version" class="text-[9px] bg-zinc-700/60 text-zinc-400 border border-zinc-600/40 px-2 py-0.5 rounded-full font-mono tracking-wider">v0.0.17</span>
+                            <span id="app-version" class="text-[9px] bg-zinc-700/60 text-zinc-400 border border-zinc-600/40 px-2 py-0.5 rounded-full font-mono tracking-wider">v0.0.18</span>
                         </h1>
                         <p class="text-[11px] text-zinc-400">超低遅延翻訳 ＆ AIアシスタント統合スタジオ</p>
                     </div>
@@ -1572,21 +1572,39 @@
             wsInstance.onopen = () => {
                 logDebug(`WebSocket 接続確立 (${sessionType})。セットアップを送信します。`, "success");
                 
-                // v0.0.8: inputAudioTranscription と outputAudioTranscription を setup 直下（camelCase）に配置して検証
-                const setupMessage = {
-                    setup: {
-                        model: modelName,
-                        generationConfig: {
-                            responseModalities: ["AUDIO"],
+                let setupMessage;
+                if (apiMode === 'vertex') {
+                    setupMessage = {
+                        setup: {
+                            model: modelName,
+                            generationConfig: {
+                                responseModalities: ["AUDIO"]
+                            },
                             translationConfig: {
                                 targetLanguageCode: targetLang,
                                 echoTargetLanguage: true
-                            }
-                        },
-                        inputAudioTranscription: {},
-                        outputAudioTranscription: {}
-                    }
-                };
+                            },
+                            inputAudioTranscription: {},
+                            outputAudioTranscription: {}
+                        }
+                    };
+                } else {
+                    setupMessage = {
+                        setup: {
+                            model: modelName,
+                            generationConfig: {
+                                responseModalities: ["AUDIO"],
+                                translationConfig: {
+                                    targetLanguageCode: targetLang,
+                                    echoTargetLanguage: true
+                                }
+                            },
+                            inputAudioTranscription: {},
+                            outputAudioTranscription: {}
+                        }
+                    };
+                }
+                
                 logDebug(`セットアップ送信 (${sessionType}): ${JSON.stringify(setupMessage)}`, "info");
                 wsInstance.send(JSON.stringify(setupMessage));
             };
