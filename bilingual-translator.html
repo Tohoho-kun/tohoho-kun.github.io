@@ -81,7 +81,7 @@
                         <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
                             Gemini Live Bilingual Translator
                             <span class="text-[9px] bg-brand-500/10 text-brand-400 border border-brand-500/20 px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider">AUDIO</span>
-                            <span id="app-version" class="text-[9px] bg-zinc-700/60 text-zinc-400 border border-zinc-600/40 px-2 py-0.5 rounded-full font-mono tracking-wider">v0.0.20</span>
+                            <span id="app-version" class="text-[9px] bg-zinc-700/60 text-zinc-400 border border-zinc-600/40 px-2 py-0.5 rounded-full font-mono tracking-wider">v0.0.21</span>
                         </h1>
                         <p class="text-[11px] text-zinc-400">超低遅延翻訳 ＆ AIアシスタント統合スタジオ</p>
                     </div>
@@ -172,6 +172,14 @@
                         <div class="flex items-center gap-2">
                             <span class="text-[10px] text-zinc-400 font-medium w-12 text-right"><span data-i18n="lang2">第二言語</span></span>
                             <select id="lang2Select" class="flex-grow bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-brand-500" onchange="handleLangSelectChange('lang2Select')"></select>
+                        </div>
+                        <div class="flex items-center gap-2 pt-1 border-t border-white/5 mt-1">
+                            <span class="text-[10px] text-zinc-400 font-medium w-12 text-right"><span data-i18n="trans_mode">翻訳方向</span></span>
+                            <select id="transModeSelect" class="flex-grow bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-brand-500">
+                                <option value="bidi" data-i18n="mode_bidi">双方向 (2セッション)</option>
+                                <option value="oneway_1to2" data-i18n="mode_oneway_1to2">片方向 (第一 → 第二)</option>
+                                <option value="oneway_2to1" data-i18n="mode_oneway_2to1">片方向 (第二 → 第一)</option>
+                            </select>
                         </div>
                     </div>
 
@@ -485,6 +493,10 @@
                 controls_title: "コントロール",
                 lang1: "第一言語",
                 lang2: "第二言語",
+                trans_mode: "翻訳方向",
+                mode_bidi: "双方向 (2セッション)",
+                mode_oneway_1to2: "片方向 (第一 → 第二)",
+                mode_oneway_2to1: "片方向 (第二 → 第一)",
                 mic_gain: "マイク入力倍率",
                 start_translate: "翻訳開始",
                 stop_translate: "翻訳停止",
@@ -531,6 +543,10 @@
                 controls_title: "Controls",
                 lang1: "Language 1",
                 lang2: "Language 2",
+                trans_mode: "Direction",
+                mode_bidi: "Bidirectional (2 sessions)",
+                mode_oneway_1to2: "One-way (Lang 1 → 2)",
+                mode_oneway_2to1: "One-way (Lang 2 → 1)",
                 mic_gain: "Mic Gain",
                 start_translate: "Start Translating",
                 stop_translate: "Stop Translating",
@@ -577,6 +593,10 @@
                 controls_title: "Controles",
                 lang1: "Idioma 1",
                 lang2: "Idioma 2",
+                trans_mode: "Dirección",
+                mode_bidi: "Bidireccional (2 sesiones)",
+                mode_oneway_1to2: "Unidireccional (Idio 1 → 2)",
+                mode_oneway_2to1: "Unidireccional (Idio 2 → 1)",
                 mic_gain: "Ganancia del Mic",
                 start_translate: "Iniciar Traducción",
                 stop_translate: "Detener Traducción",
@@ -737,6 +757,8 @@
         let ws2 = null;
         let ws1Ready = false;
         let ws2Ready = false;
+        let ws1Required = true;
+        let ws2Required = true;
         
         let isSessionActive = false;
         let isConnecting = false; // [追加] セッション確立待機中のフラグ
@@ -1333,6 +1355,10 @@
             ws1Ready = false;
             ws2Ready = false;
             
+            const transMode = document.getElementById("transModeSelect").value;
+            ws1Required = (transMode === "bidi" || transMode === "oneway_1to2");
+            ws2Required = (transMode === "bidi" || transMode === "oneway_2to1");
+            
             if (!totalStartTime) totalStartTime = Date.now();
             sessionStartTime = Date.now();
             if (timerInterval) clearInterval(timerInterval);
@@ -1344,11 +1370,15 @@
             toggleSessionBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> ${getI18nText("status_connecting")}`;
             toggleSessionBtn.className = "w-full bg-zinc-800 text-zinc-400 text-xs font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition duration-200 cursor-not-allowed";
             
-            logDebug(`セッション1 (${lang1Code.toUpperCase()} → ${lang2Code.toUpperCase()}) の接続を開始します...`, "info");
-            ws1 = connectLiveSocket(apiKey, lang1Code, lang2Code);
+            if (ws1Required) {
+                logDebug(`セッション1 (${lang1Code.toUpperCase()} → ${lang2Code.toUpperCase()}) の接続を開始します...`, "info");
+                ws1 = connectLiveSocket(apiKey, lang1Code, lang2Code);
+            }
             
-            logDebug(`セッション2 (${lang2Code.toUpperCase()} → ${lang1Code.toUpperCase()}) の接続を開始します...`, "info");
-            ws2 = connectLiveSocket(apiKey, lang2Code, lang1Code);
+            if (ws2Required) {
+                logDebug(`セッション2 (${lang2Code.toUpperCase()} → ${lang1Code.toUpperCase()}) の接続を開始します...`, "info");
+                ws2 = connectLiveSocket(apiKey, lang2Code, lang1Code);
+            }
         }
 
         function stopBilingualSession() {
@@ -1549,7 +1579,10 @@
         }
 
         async function checkAllSocketsReady() {
-            if (ws1Ready && ws2Ready) {
+            const ws1Ok = !ws1Required || ws1Ready;
+            const ws2Ok = !ws2Required || ws2Ready;
+            
+            if (ws1Ok && ws2Ok) {
                 logDebug("全WebSocketセッションのセットアップが完了しました。音声システムを開始します。", "success");
                 
                 const micAllowed = await initAudioSystem();
