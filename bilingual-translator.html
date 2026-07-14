@@ -69,6 +69,22 @@
 </head>
 <body class="min-h-[100dvh] xl:h-screen flex flex-col antialiased xl:overflow-hidden">
 
+    <!-- セッション延長バナー -->
+    <div id="extensionBanner" class="hidden fixed top-0 left-0 w-full bg-red-600 z-[100] px-4 py-3 flex justify-between items-center shadow-lg shadow-red-900/50">
+        <div class="text-white text-sm font-semibold flex items-center gap-2">
+            <i class="fa-solid fa-clock animate-pulse"></i>
+            <span id="extensionText"></span>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="extendSession()" class="bg-white text-red-700 hover:bg-zinc-100 text-xs font-bold py-1.5 px-3 rounded shadow transition active:scale-95">
+                <span data-i18n="extend_btn">30分延長する</span>
+            </button>
+            <button onclick="hideExtensionBanner()" class="bg-red-800 text-red-200 hover:bg-red-900 text-xs font-bold py-1.5 px-3 rounded shadow transition active:scale-95">
+                <i class="fa-solid fa-times"></i>
+            </button>
+        </div>
+    </div>
+
     <!-- ナビゲーションバー -->
     <header class="shrink-0 border-b border-white/5 bg-black/40 backdrop-blur-md relative z-40 px-6 py-3">
         <div class="max-w-[1920px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -81,7 +97,7 @@
                         <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
                             Gemini Live Bilingual Translator
                             <span class="text-[9px] bg-brand-500/10 text-brand-400 border border-brand-500/20 px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider">AUDIO</span>
-                            <span id="app-version" class="text-[9px] bg-zinc-700/60 text-zinc-400 border border-zinc-600/40 px-2 py-0.5 rounded-full font-mono tracking-wider">v0.0.21</span>
+                            <span id="app-version" class="text-[9px] bg-zinc-700/60 text-zinc-400 border border-zinc-600/40 px-2 py-0.5 rounded-full font-mono tracking-wider">v0.0.22</span>
                         </h1>
                         <p class="text-[11px] text-zinc-400">超低遅延翻訳 ＆ AIアシスタント統合スタジオ</p>
                     </div>
@@ -500,6 +516,8 @@
                 mic_gain: "マイク入力倍率",
                 start_translate: "翻訳開始",
                 stop_translate: "翻訳停止",
+                extend_btn: "30分延長する",
+                expire_warning: "セッションはあと {time} で自動切断されます。",
                 force_disconnect: "強制切断",
                 clear_history: "履歴をクリア",
                 save_md: "全てをMD保存",
@@ -550,6 +568,8 @@
                 mic_gain: "Mic Gain",
                 start_translate: "Start Translating",
                 stop_translate: "Stop Translating",
+                extend_btn: "Extend 30 min",
+                expire_warning: "Session will auto-disconnect in {time}.",
                 force_disconnect: "Force Disconnect",
                 clear_history: "Clear History",
                 save_md: "Save All to MD",
@@ -600,6 +620,8 @@
                 mic_gain: "Ganancia del Mic",
                 start_translate: "Iniciar Traducción",
                 stop_translate: "Detener Traducción",
+                extend_btn: "Extender 30 min",
+                expire_warning: "La sesión se desconectará en {time}.",
                 force_disconnect: "Forzar Desconexión",
                 clear_history: "Borrar Historial",
                 save_md: "Guardar todo en MD",
@@ -760,6 +782,9 @@
         let ws1Required = true;
         let ws2Required = true;
         
+        let sessionExpireTime = 0;
+        let extensionPromptShown = false;
+        
         let isSessionActive = false;
         let isConnecting = false; // [追加] セッション確立待機中のフラグ
         let isConsoleOpen = false;
@@ -796,6 +821,34 @@
             if (sessionStartTime) {
                 document.getElementById('sessionTimeDisplay').innerText = formatTime(Date.now() - sessionStartTime);
             }
+            
+            if (isSessionActive && sessionExpireTime > 0) {
+                const timeLeft = sessionExpireTime - Date.now();
+                if (timeLeft <= 0) {
+                    logDebug("自動切断: セッションの制限時間に到達しました。", "warning");
+                    stopBilingualSession();
+                } else if (timeLeft <= 5 * 60 * 1000) {
+                    const banner = document.getElementById("extensionBanner");
+                    document.getElementById("extensionText").innerText = getI18nText("expire_warning").replace("{time}", formatTime(timeLeft));
+                    if (!extensionPromptShown) {
+                        banner.classList.remove("hidden");
+                        extensionPromptShown = true;
+                    }
+                }
+            }
+        }
+
+        function extendSession() {
+            const EXTENSION_MS = 30 * 60 * 1000;
+            sessionExpireTime += EXTENSION_MS;
+            extensionPromptShown = false;
+            hideExtensionBanner();
+            logDebug("セッションが30分延長されました。", "info");
+            showToast("セッションを30分延長しました。", "success");
+        }
+
+        function hideExtensionBanner() {
+            document.getElementById("extensionBanner").classList.add("hidden");
         }
         // UIバインディング
         const apiKeyInput = document.getElementById("apiKeyInput");
@@ -1361,6 +1414,12 @@
             
             if (!totalStartTime) totalStartTime = Date.now();
             sessionStartTime = Date.now();
+            
+            const INITIAL_LIMIT_MS = 60 * 60 * 1000;
+            sessionExpireTime = Date.now() + INITIAL_LIMIT_MS;
+            extensionPromptShown = false;
+            hideExtensionBanner();
+            
             if (timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(updateTimers, 1000);
             updateTimers();
@@ -1386,6 +1445,10 @@
             isSessionActive = false;
             isConnecting = false;
             isAudioSendingReady = false;
+            
+            sessionExpireTime = 0;
+            extensionPromptShown = false;
+            hideExtensionBanner();
             
             if (timerInterval) {
                 clearInterval(timerInterval);
@@ -1427,6 +1490,10 @@
             isAudioSendingReady = false;
             ws1Ready = false;
             ws2Ready = false;
+            
+            sessionExpireTime = 0;
+            extensionPromptShown = false;
+            hideExtensionBanner();
 
             // マイク・音声リソースを解放
             try { cleanupAudioNodes(); } catch(e) {}
