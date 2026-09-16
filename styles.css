@@ -1564,6 +1564,37 @@ hr {
     padding: 1.5rem;
 }
 
+.torque-presets-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    padding: 0.75rem 1rem;
+    margin-top: 0.85rem;
+    margin-bottom: 0.5rem;
+    border-radius: 8px;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-left: 4px solid #f59e0b;
+    color: var(--text-color);
+    font-size: 0.85rem;
+    line-height: 1.55;
+}
+
+.torque-presets-notice i {
+    color: #f59e0b;
+    font-size: 1.05rem;
+    margin-top: 0.15rem;
+    flex-shrink: 0;
+}
+
+.torque-presets-notice strong {
+    color: #d97706;
+}
+
+[data-theme="dark"] .torque-presets-notice strong {
+    color: #fbbf24;
+}
+
 .torque-presets-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
