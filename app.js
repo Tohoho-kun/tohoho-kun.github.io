@@ -112,6 +112,7 @@ const i18n = {
         transparent: "透明",
         solid: "塗りつぶし",
         copyImage: "画像をコピー",
+        downloadImage: "画像をダウンロード",
         copySuccess: "コピーしました！",
         copyFail: "コピーに失敗しました。",
         weld_app_title: "Macro measurement of weld cross section",
@@ -199,7 +200,29 @@ const i18n = {
         imgcmp_app_title: "圧縮フォーマット比較ツール",
         imgcmp_app_desc: "WebP / AVIF / JPEG / PNG などの画質・ファイルサイズを並べて比較。PSNR・RMSE・差分マップで客観評価。",
         translator_app_title: "Gemini Live Bilingual Translator",
-        translator_app_desc: "超低遅延リアルタイム日英双方向音声翻訳 ＆ AI要約・アシスタント統合スタジオ。"
+        translator_app_desc: "超低遅延リアルタイム日英双方向音声翻訳 ＆ AI要約・アシスタント統合スタジオ。",
+        oklab_app_title: "OKLab Tone Curve & Photo Retouch",
+        oklab_app_desc: "知覚的色空間（OKLab / OKLch / Okhsl）による高精度トーンカーブ調整＆フォトレタッチツール。完全クライアントサイド動作。",
+        torque_app_title: "トルク単位変換 (N·m ⇄ lb·ft)",
+        torque_app_desc: "N·m と lb·ft を双方向で瞬時に高精度変換。デフォルト30N·m・ワンタッチ向き入替・実用プリセット付き。",
+        torque_title: "トルク単位変換 (N·m ⇄ lb·ft)",
+        torque_subtitle: "ボルト・ナット締め付けトルクの高精度双方向変換（デフォルト: 30 N·m）",
+        torque_dir_label: "変換向き:",
+        torque_decimals: "小数桁数:",
+        unit_nm_desc: "ニュートンメートル (SI単位)",
+        torque_swap_btn: "入替",
+        unit_lbft_desc: "ポンドフィート (ヤードポンド法 / ft·lb)",
+        torque_slider_title: "トルクスライダー:",
+        torque_presets_title: "実用プリセット（代表的な締め付けトルク目安）",
+        preset_bicycle: "🚴 自転車 整備・カーボンパーツ",
+        preset_m6: "🔩 M6 一般ボルト",
+        preset_sparkplug: "🚗 点火プラグ (スパークプラグ)",
+        preset_drainbolt: "🛢️ エンジンオイル ドレンボルト",
+        preset_m10: "⚙️ M10 一般ボルト / キャリパー",
+        preset_wheel_kei: "🚙 軽自動車 ホイールナット",
+        preset_wheel_car: "🚗 普通乗用車 ホイールナット",
+        preset_wheel_suv: "🚚 SUV / 大型車 ホイールナット",
+        torque_table_title: "トルク換算早見表 (タップして適用)"
     },
     en: {
         portal_title: "Engineering Tools Portal",
@@ -313,6 +336,7 @@ const i18n = {
         transparent: "Transparent",
         solid: "Solid Fill",
         copyImage: "Copy Image",
+        downloadImage: "Download Image",
         copySuccess: "Copied!",
         copyFail: "Failed to copy.",
         weld_app_title: "Macro measurement of weld cross section",
@@ -400,7 +424,29 @@ const i18n = {
         imgcmp_app_title: "Image Compression Format Comparator",
         imgcmp_app_desc: "Compare image quality and file size across WebP / AVIF / JPEG / PNG. Objective evaluation with PSNR, RMSE, and diff maps.",
         translator_app_title: "Gemini Live Bilingual Translator",
-        translator_app_desc: "Ultra-low latency real-time Japanese-English bidirectional voice translation & AI summary/assistant integrated studio."
+        translator_app_desc: "Ultra-low latency real-time Japanese-English bidirectional voice translation & AI summary/assistant integrated studio.",
+        oklab_app_title: "OKLab Tone Curve & Photo Retouch",
+        oklab_app_desc: "High-precision tone curve adjustment & photo retouching in perceptual OKLab / OKLch / Okhsl color space. Fully client-side.",
+        torque_app_title: "Torque Unit Converter (N·m ⇄ lb·ft)",
+        torque_app_desc: "Instant, high-precision two-way conversion between N·m and lb·ft. Defaults to 30 N·m with quick swap and practical presets.",
+        torque_title: "Torque Converter (N·m ⇄ lb·ft)",
+        torque_subtitle: "High-precision two-way conversion for bolt tightening torque (Default: 30 N·m)",
+        torque_dir_label: "Direction:",
+        torque_decimals: "Decimals:",
+        unit_nm_desc: "Newton-meter (SI Unit)",
+        torque_swap_btn: "Swap",
+        unit_lbft_desc: "Pound-foot / ft·lb (Imperial / US Customary)",
+        torque_slider_title: "Torque Slider:",
+        torque_presets_title: "Practical Benchmarks & Presets",
+        preset_bicycle: "🚴 Bicycle & Carbon Components",
+        preset_m6: "🔩 M6 Standard Bolt",
+        preset_sparkplug: "🚗 Spark Plug",
+        preset_drainbolt: "🛢️ Engine Oil Drain Plug",
+        preset_m10: "⚙️ M10 Standard Bolt / Caliper",
+        preset_wheel_kei: "🚙 Compact / Kei Car Lug Nut",
+        preset_wheel_car: "🚗 Passenger Car Lug Nut",
+        preset_wheel_suv: "🚚 SUV / Truck Lug Nut",
+        torque_table_title: "Quick Reference Conversion Table (Click to apply)"
     },
     es: {
         portal_title: "Portal de Herramientas de Ingeniería",
@@ -514,6 +560,7 @@ const i18n = {
         transparent: "Transparente",
         solid: "Relleno Sólido",
         copyImage: "Copiar Imagen",
+        downloadImage: "Descargar Imagen",
         copySuccess: "¡Copiado!",
         copyFail: "Error al copiar.",
         weld_app_title: "Macro measurement of weld cross section",
@@ -601,7 +648,29 @@ const i18n = {
         imgcmp_app_title: "Comparador de Formatos de Compresión de Imágenes",
         imgcmp_app_desc: "Compara calidad y tamaño de archivo entre WebP / AVIF / JPEG / PNG. Evaluación objetiva con PSNR, RMSE y mapas de diferencias.",
         translator_app_title: "Gemini Live Bilingual Translator",
-        translator_app_desc: "Traducción de voz bidireccional japonés-inglés en tiempo real de ultra baja latencia y estudio integrado de asistente/resumen de IA."
+        translator_app_desc: "Traducción de voz bidireccional japonés-inglés en tiempo real de ultra baja latencia y estudio integrado de asistente/resumen de IA.",
+        oklab_app_title: "OKLab Tone Curve & Photo Retouch",
+        oklab_app_desc: "Ajuste de curva de tonos y retoque fotográfico en espacio de color perceptual OKLab / OKLch / Okhsl. Procesamiento local en el navegador.",
+        torque_app_title: "Conversor de Par de Apriete (N·m ⇄ lb·ft)",
+        torque_app_desc: "Conversión bidireccional instantánea y precisa entre N·m y lb·ft. Valor predeterminado de 30 N·m, cambio rápido y ajustes preestablecidos.",
+        torque_title: "Conversor de Torque (N·m ⇄ lb·ft)",
+        torque_subtitle: "Conversión bidireccional de par de apriete para pernos y tuercas (Predeterminado: 30 N·m)",
+        torque_dir_label: "Dirección:",
+        torque_decimals: "Decimales:",
+        unit_nm_desc: "Newton-metro (Unidad SI)",
+        torque_swap_btn: "Invertir",
+        unit_lbft_desc: "Libra-pie / ft·lb (Sistema Imperial)",
+        torque_slider_title: "Deslizador de Torque:",
+        torque_presets_title: "Valores Preestablecidos Prácticos",
+        preset_bicycle: "🚴 Bicicletas y Componentes de Carbono",
+        preset_m6: "🔩 Perno Estándar M6",
+        preset_sparkplug: "🚗 Bujía de Encendido",
+        preset_drainbolt: "🛢️ Tapón de Drenaje de Aceite",
+        preset_m10: "⚙️ Perno Estándar M10 / Pinza",
+        preset_wheel_kei: "🚙 Tuerca de Rueda - Autos Compactos",
+        preset_wheel_car: "🚗 Tuerca de Rueda - Turismos",
+        preset_wheel_suv: "🚚 Tuerca de Rueda - SUV y Camionetas",
+        torque_table_title: "Tabla de Conversión Rápida (Haga clic para aplicar)"
     }
 };
 
@@ -617,14 +686,24 @@ function initLanguage() {
     const langSelect = document.getElementById('lang-select');
     if (!langSelect) return;
     
-    // Auto detect from browser if possible
-    const browserLang = navigator.language.slice(0, 2);
-    if (i18n[browserLang]) {
-        langSelect.value = browserLang;
-    }
+    // Check localStorage first, then fallback to browser language
+    try {
+        const savedLang = localStorage.getItem('tohoho_lang');
+        if (savedLang && i18n[savedLang]) {
+            langSelect.value = savedLang;
+        } else {
+            const browserLang = navigator.language.slice(0, 2);
+            if (i18n[browserLang]) {
+                langSelect.value = browserLang;
+            }
+        }
+    } catch (e) {}
     
     langSelect.addEventListener('change', (e) => {
-        applyTranslation(e.target.value);
+        const lang = e.target.value;
+        try { localStorage.setItem('tohoho_lang', lang); } catch (e) {}
+        applyTranslation(lang);
+        updateDocumentTitle(window.location.hash || '#home', lang);
     });
 }
 
@@ -659,19 +738,51 @@ window.t = function(key) {
 function initTheme() {
     const toggleBtn = document.getElementById('theme-toggle');
     const html = document.documentElement;
-    // Default to dark as requested
     let isDark = true;
     
-    toggleBtn.addEventListener('click', () => {
-        isDark = !isDark;
-        html.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    try {
+        const savedTheme = localStorage.getItem('tohoho_theme');
+        if (savedTheme) {
+            isDark = savedTheme === 'dark';
+        }
+    } catch (e) {}
+    
+    html.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    if (toggleBtn) {
         toggleBtn.innerHTML = isDark ? '<i class="fa-solid fa-moon"></i>' : '<i class="fa-solid fa-sun"></i>';
         
-        // Update Chart JS Colors dynamically if initialized
-        if (window.cpkChart) {
-            updateChartTheme(isDark);
-        }
-    });
+        toggleBtn.addEventListener('click', () => {
+            isDark = !isDark;
+            html.setAttribute('data-theme', isDark ? 'dark' : 'light');
+            try { localStorage.setItem('tohoho_theme', isDark ? 'dark' : 'light'); } catch (e) {}
+            toggleBtn.innerHTML = isDark ? '<i class="fa-solid fa-moon"></i>' : '<i class="fa-solid fa-sun"></i>';
+            
+            // Update Chart JS Colors dynamically if initialized
+            if (window.cpkChart && typeof updateChartTheme === 'function') {
+                updateChartTheme(isDark);
+            }
+            if (window.grrChart) {
+                if (window.grrChart.options.scales && window.grrChart.options.scales.x) {
+                    window.grrChart.options.scales.x.grid.color = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+                }
+                window.grrChart.update();
+            }
+        });
+    }
+}
+
+function updateDocumentTitle(hash, langCode) {
+    const dict = i18n[langCode] || i18n['ja'];
+    const titleMap = {
+        '#home': dict.portal_title || 'Tohoho-kun Tech Platform',
+        '#cpk': (dict.cpk_title || 'Cpk Simulator') + ' | Tohoho-kun Tech Platform',
+        '#grr': (dict.grr_title || 'Gage R&R') + ' | Tohoho-kun Tech Platform',
+        '#gdt-position': (dict.gdt_title || 'GD&T Position') + ' | Tohoho-kun Tech Platform',
+        '#symbol-combiner': (dict.symbol_title || 'Symbol Combiner') + ' | Tohoho-kun Tech Platform',
+        '#weld': (dict.weld_title || 'Weld Measurement') + ' | Tohoho-kun Tech Platform',
+        '#torque': (dict.torque_title || 'Torque Converter') + ' | Tohoho-kun Tech Platform',
+    };
+    document.title = titleMap[hash] || (dict.portal_title ? dict.portal_title + ' | Tohoho-kun' : 'Tohoho-kun Tech Platform');
 }
 
 function initRouter() {
@@ -699,13 +810,18 @@ function handleRoute() {
     } else if (hash === '#weld') {
         renderTemplate('view-weld', content);
         initWeldTool();
+    } else if (hash === '#torque') {
+        renderTemplate('view-torque', content);
+        initTorqueConverter();
     } else {
         window.location.hash = '#home'; // fallback
+        return;
     }
     
-    // Apply translations on route change
+    // Apply translations and title on route change
     const langCode = document.getElementById('lang-select')?.value || 'ja';
     applyTranslation(langCode);
+    updateDocumentTitle(hash, langCode);
 }
 
 function renderTemplate(templateId, targetElement) {

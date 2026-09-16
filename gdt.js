@@ -6,6 +6,8 @@ let gdtGridHelper, gdtAxesGroup;
 let gdtHudScene, gdtHudCamera, gdtHudAxesGroup;
 let gdtCylinder, gdtBox, gdtMeasLine, gdtMeasDot;
 let gdtAutoRotate = true;
+let gdtAnimId = null;
+let gdtResizeHandler = null;
 const GDT_HEIGHT = 10;
 
 function initGdtSimulator() {
@@ -674,6 +676,15 @@ function initGdtScene() {
         return;
     }
     
+    if (gdtAnimId) {
+        cancelAnimationFrame(gdtAnimId);
+        gdtAnimId = null;
+    }
+    if (gdtRenderer) {
+        try { gdtRenderer.dispose(); } catch (e) {}
+        gdtRenderer = null;
+    }
+    
     container.innerHTML = ''; // Clear prev
     
     const w = container.clientWidth || 600;
@@ -783,7 +794,11 @@ function initGdtScene() {
     
     // Animation loop
     function animate() {
-        requestAnimationFrame(animate);
+        if (!document.getElementById('gdt-3d-container')) {
+            gdtAnimId = null;
+            return;
+        }
+        gdtAnimId = requestAnimationFrame(animate);
         if (gdtControls) gdtControls.update();
         
         // Dynamically update background if theme changed
@@ -815,26 +830,27 @@ function initGdtScene() {
     }
     animate();
     
-    // Responsive
-    window.addEventListener('resize', () => {
-        if (document.getElementById('gdt-3d-container') && gdtCamera) {
-            const nw = container.clientWidth;
-            const nh = container.clientHeight;
-            gdtCamera.aspect = nw / nh;
-            gdtCamera.updateProjectionMatrix();
-            gdtRenderer.setSize(nw, nh);
+    // Responsive (single managed listener)
+    if (gdtResizeHandler) {
+        window.removeEventListener('resize', gdtResizeHandler);
+    }
+    gdtResizeHandler = () => {
+        const curContainer = document.getElementById('gdt-3d-container');
+        if (curContainer && gdtCamera && gdtRenderer) {
+            const nw = curContainer.clientWidth;
+            const nh = curContainer.clientHeight;
+            if (nw > 0 && nh > 0) {
+                gdtCamera.aspect = nw / nh;
+                gdtCamera.updateProjectionMatrix();
+                gdtRenderer.setSize(nw, nh);
+            }
         }
-    });
+    };
+    window.addEventListener('resize', gdtResizeHandler);
     
     // Delayed resize to fix initial container height not being computed
     setTimeout(() => {
-        const nw = container.clientWidth;
-        const nh = container.clientHeight;
-        if (nw > 0 && nh > 0 && gdtCamera) {
-            gdtCamera.aspect = nw / nh;
-            gdtCamera.updateProjectionMatrix();
-            gdtRenderer.setSize(nw, nh);
-        }
+        if (gdtResizeHandler) gdtResizeHandler();
     }, 100);
 }
 

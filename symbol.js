@@ -203,5 +203,16 @@ function initSymbolCombiner() {
         });
     }
 
+    const downloadBtn = document.getElementById('symbol-download-btn');
+    if (downloadBtn) {
+        downloadBtn.addEventListener('click', () => {
+            const link = document.createElement('a');
+            const sanitizedText = (state.text || 'icon').replace(/[^a-zA-Z0-9_\-\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/g, '_');
+            link.download = `symbol_${state.symbol}_${sanitizedText}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+    }
+
     draw();
 }

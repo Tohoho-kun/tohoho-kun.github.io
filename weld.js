@@ -5,14 +5,21 @@
 
 let cvReady = false;
 
-function onOpenCvReady() {
-    if (cvReady) return;
-    cvReady = true;
+function updateOpenCvStatusUI() {
     const statusEl = document.getElementById('opencv-status');
-    if (statusEl) {
+    if (!statusEl) return;
+    if (cvReady || (typeof cv !== 'undefined' && cv.Mat)) {
+        cvReady = true;
         statusEl.innerHTML = '<i class="fa-solid fa-check-circle"></i> OpenCV.js Ready';
         statusEl.classList.add('status-ready');
+        statusEl.style.backgroundColor = '';
+        statusEl.style.color = '';
     }
+}
+
+function onOpenCvReady() {
+    cvReady = true;
+    updateOpenCvStatusUI();
 }
 
 // Hook for OpenCV.js runtime initialization
@@ -127,6 +134,7 @@ function initWeldTool() {
     const now = new Date();
     elements.attrDate.value = now.toISOString().split('T')[0];
     loadHistory();
+    updateOpenCvStatusUI();
 
     // Event Listeners
     elements.imageInput.addEventListener('change', (e) => handleImageUpload(e, false));

@@ -267,8 +267,15 @@ function updateGrrUI(res) {
 }
 
 function initGrrChart() {
-    const ctx = document.getElementById('grr-chart').getContext('2d');
+    const canvas = document.getElementById('grr-chart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    
+    if (grrChart) {
+        try { grrChart.destroy(); } catch (e) {}
+        grrChart = null;
+    }
     
     grrChart = new Chart(ctx, {
         type: 'bar',
@@ -309,6 +316,7 @@ function initGrrChart() {
             }
         }
     });
+    window.grrChart = grrChart;
 }
 
 function renderGrrChart(res) {

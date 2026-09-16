@@ -236,11 +236,18 @@ function updateCpkView() {
 }
 
 function initChart() {
-    const ctx = document.getElementById('cpk-chart').getContext('2d');
+    const canvas = document.getElementById('cpk-chart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     
     Chart.defaults.color = isDark ? '#94a3b8' : '#6b7280';
     Chart.defaults.font.family = "'Inter', sans-serif";
+    
+    if (cpkChart) {
+        try { cpkChart.destroy(); } catch (e) {}
+        cpkChart = null;
+    }
     
     cpkChart = new Chart(ctx, {
         type: 'line',
