@@ -6,11 +6,56 @@
   <title>組織構造と認知バイアスの圏論的統合モデル</title>
   <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
   <style>
-    .node-btn { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
-    .node-btn:hover { transform: translateY(-2px); }
-    .active-ring { outline: 2px solid var(--primary); outline-offset: 2px; }
-    .diagram-arrow { stroke-dasharray: 6 4; animation: flow 1.6s linear infinite; }
-    @keyframes flow { to { stroke-dashoffset: -20; } }
+    :root{
+      --background:#eef2ff; --foreground:#1e1b4b;
+      --card:#ffffff; --border:#c7d2fe;
+      --muted-foreground:#5b6490;
+      --primary:#4f46e5; --primary-foreground:#ffffff;
+      --secondary:#e0e7ff; --secondary-foreground:#3730a3;
+      --c-cog:#2563eb; --c-pos:#d97706; --c-rep:#9333ea;
+      --c-cog-bg:#dbeafe; --c-pos-bg:#fef3c7; --c-rep-bg:#f3e8ff;
+    }
+    @media (prefers-color-scheme: dark){
+      :root{
+        --background:#0f1030; --foreground:#e8eaff;
+        --card:#1a1c47; --border:#3a3f8f;
+        --muted-foreground:#a5acd9;
+        --primary:#818cf8; --primary-foreground:#0f1030;
+        --secondary:#2a2e6b; --secondary-foreground:#c7d2fe;
+        --c-cog:#60a5fa; --c-pos:#fbbf24; --c-rep:#c084fc;
+        --c-cog-bg:#172554; --c-pos-bg:#422006; --c-rep-bg:#3b0764;
+      }
+    }
+    body{
+      background:
+        radial-gradient(900px 400px at 10% -10%, rgba(99,102,241,.25), transparent 60%),
+        radial-gradient(800px 400px at 90% 0%, rgba(236,72,153,.18), transparent 60%),
+        var(--background) !important;
+    }
+    header h1{
+      background:linear-gradient(90deg,var(--c-cog),var(--c-rep),#ec4899);
+      -webkit-background-clip:text; background-clip:text; color:transparent;
+    }
+    header > div:first-child{ border-left:4px solid var(--primary); padding-left:12px; }
+    #scenario-bar{ background:linear-gradient(135deg,var(--card),var(--secondary)) !important; }
+    #structure-banner,#inspector-panel{ border-top:4px solid var(--primary) !important; box-shadow:0 4px 16px rgba(79,70,229,.12) !important; }
+    #categories-grid > article{ border-top-width:4px !important; border-top-style:solid; }
+    #categories-grid > article:nth-child(1){ border-top-color:var(--c-cog); background:linear-gradient(180deg,var(--c-cog-bg),var(--card) 90px) !important; }
+    #categories-grid > article:nth-child(2){ border-top-color:var(--c-pos); background:linear-gradient(180deg,var(--c-pos-bg),var(--card) 90px) !important; }
+    #categories-grid > article:nth-child(3){ border-top-color:var(--c-rep); background:linear-gradient(180deg,var(--c-rep-bg),var(--card) 90px) !important; }
+    #categories-grid > article:nth-child(1) h3, #categories-grid > article:nth-child(1) .font-mono{ color:var(--c-cog); }
+    #categories-grid > article:nth-child(2) h3, #categories-grid > article:nth-child(2) .font-mono{ color:var(--c-pos); }
+    #categories-grid > article:nth-child(3) h3, #categories-grid > article:nth-child(3) .font-mono{ color:var(--c-rep); }
+    #categories-grid > article:nth-child(1) .node-btn{ border-left:3px solid var(--c-cog); }
+    #categories-grid > article:nth-child(2) .node-btn{ border-left:3px solid var(--c-pos); }
+    #categories-grid > article:nth-child(3) .node-btn{ border-left:3px solid var(--c-rep); }
+    .node-btn{ transition:all .2s cubic-bezier(.4,0,.2,1); background:var(--card) !important; }
+    .node-btn:hover{ transform:translateY(-2px); box-shadow:0 4px 12px rgba(79,70,229,.2); }
+    .active-ring{ outline:2px solid var(--primary); outline-offset:2px; }
+    button[aria-pressed="true"],button[aria-selected="true"]{ background:linear-gradient(135deg,#4f46e5,#9333ea) !important; color:#fff !important; border-color:transparent !important; }
+    #toggle-adaptation{ background:linear-gradient(135deg,#f59e0b,#ef4444) !important; color:#fff !important; border-color:transparent !important; }
+    .diagram-arrow{ stroke-dasharray:6 4; animation:flow 1.6s linear infinite; }
+    @keyframes flow{ to{ stroke-dashoffset:-20; } }
   </style>
 </head>
 <body class="bg-[var(--background)] text-[var(--foreground)] antialiased min-h-screen p-4 md:p-6">
@@ -112,27 +157,27 @@
           </defs>
 
           <!-- Category Boxes -->
-          <rect x="20" y="25" width="220" height="175" rx="12" fill="none" stroke="currentColor" stroke-opacity="0.25" stroke-width="1.5" />
+          <rect x="20" y="25" width="220" height="175" rx="12" fill="var(--c-cog-bg)" stroke="var(--c-cog)" stroke-width="2" />
           <text x="130" y="48" text-anchor="middle" font-size="13" font-weight="bold" fill="currentColor">個体認知圏 𝒞_Cog (実)</text>
           <text x="130" y="68" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.75">O₁: 生存可能性 / O₂: 自我統一</text>
           <text x="130" y="88" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.75">O₃: 実質的能力・内面状態</text>
-          <rect x="45" y="108" width="170" height="36" rx="6" fill="currentColor" fill-opacity="0.07" />
+          <rect x="45" y="108" width="170" height="36" rx="6" fill="var(--c-cog)" fill-opacity="0.18" />
           <text x="130" y="130" text-anchor="middle" font-size="12" font-family="monospace" fill="currentColor">f : 損失回避・確証バイアス</text>
           <text x="130" y="175" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.65">恒等射 id_Cog : 現状維持</text>
 
-          <rect x="320" y="25" width="220" height="175" rx="12" fill="none" stroke="currentColor" stroke-opacity="0.25" stroke-width="1.5" />
+          <rect x="320" y="25" width="220" height="175" rx="12" fill="var(--c-pos-bg)" stroke="var(--c-pos)" stroke-width="2" />
           <text x="430" y="48" text-anchor="middle" font-size="13" font-weight="bold" fill="currentColor">制度立場圏 𝒞_Pos (型)</text>
           <text x="430" y="68" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.75">P₁: 統治 / P₂: 中間 / P₃: 現場</text>
           <text x="430" y="88" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.75">モナド T = U∘L (役割の自己目的化)</text>
-          <rect x="345" y="108" width="170" height="36" rx="6" fill="currentColor" fill-opacity="0.07" />
+          <rect x="345" y="108" width="170" height="36" rx="6" fill="var(--c-pos)" fill-opacity="0.18" />
           <text x="430" y="130" text-anchor="middle" font-size="12" font-family="monospace" fill="currentColor">g : 手続履行・85-90%未達</text>
           <text x="430" y="175" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.65">恒等射 id_Pos : 前例踏襲</text>
 
-          <rect x="620" y="25" width="220" height="175" rx="12" fill="none" stroke="currentColor" stroke-opacity="0.25" stroke-width="1.5" />
+          <rect x="620" y="25" width="220" height="175" rx="12" fill="var(--c-rep-bg)" stroke="var(--c-rep)" stroke-width="2" />
           <text x="730" y="48" text-anchor="middle" font-size="13" font-weight="bold" fill="currentColor">組織表象圏 𝒞_Rep (名)</text>
           <text x="730" y="68" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.75">R₁: 稟議 / R₂: 単位・KPI</text>
           <text x="730" y="88" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.75">R₃: AI洗浄済ナレッジ表象</text>
-          <rect x="645" y="108" width="170" height="36" rx="6" fill="currentColor" fill-opacity="0.07" />
+          <rect x="645" y="108" width="170" height="36" rx="6" fill="var(--c-rep)" fill-opacity="0.18" />
           <text x="730" y="130" text-anchor="middle" font-size="12" font-family="monospace" fill="currentColor">h : 指標ハック・事実洗浄 F_AI</text>
           <text x="730" y="175" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.65">恒等射 id_Rep : 自己言及</text>
 
