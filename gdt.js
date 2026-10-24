@@ -435,6 +435,17 @@ window.toggleGdt3dRotate = function() {
     }
 }
 
+let gdtShowBolt3D = true;
+
+window.toggleGdt3dBolt = function() {
+    gdtShowBolt3D = !gdtShowBolt3D;
+    const text = document.getElementById('gdt-3d-bolt-text');
+    if (text) {
+        text.textContent = gdtShowBolt3D ? '実寸ボルト: 表示中' : '実寸ボルト: 非表示 (軸公差のみ)';
+    }
+    calculateGdt();
+};
+
 // --- Display Mode ---
 let gdtDisplayMode = 'both'; // 'both', 'pos', 'box'
 
@@ -648,28 +659,31 @@ function renderGdt2D(dx, dy, baseTol, totalTol, isPassPos, isPassBox) {
 
     const icx = ix + insetW / 2;
     const icy = iy + 95;
-    // Exaggerate clearance difference relative to pin so user clearly sees the gap
-    const pinDrawR = 36;
-    const mag = 36 / Math.max(baseTol, 0.25); // visual magnification for gap/deviation
-    const holeDrawR = Math.min(68, Math.max(24, pinDrawR + (effTotalClearanceDia / 2) * mag));
-    const mmcHoleDrawR = Math.min(68, Math.max(24, pinDrawR + (baseTol / 2) * mag));
+    // Draw at TRUE physical proportion (with slight minimum clearance visibility for tiny tolerances)
+    const refMaxDia = Math.max(actHole, mmcHole, vcPinDia + totalTol, 1.0);
+    const scale2DInset = 52 / (refMaxDia / 2); // outer hole radius ~52px
+    const effBoltDia2D = Math.max(0.2, actHole - effTotalClearanceDia);
+    const pinDrawR = (effBoltDia2D / 2) * scale2DInset;
+    const holeDrawR = (actHole / 2) * scale2DInset;
+    const mmcHoleDrawR = (mmcHole / 2) * scale2DInset;
+    const axisTolDrawR = (totalTol / 2) * scale2DInset;
 
     const unitX = radialDev > 1e-6 ? (dx / radialDev) : 0;
     const unitY = radialDev > 1e-6 ? (-dy / radialDev) : 0;
-    const shiftPx = radialDev * mag;
+    const shiftPx = radialDev * scale2DInset;
     const hcx = icx + unitX * shiftPx;
     const hcy = icy + unitY * shiftPx;
 
     // Workpiece background shading around hole
     ctx.fillStyle = isDark ? 'rgba(148, 163, 184, 0.14)' : 'rgba(100, 116, 139, 0.15)';
     ctx.beginPath();
-    ctx.arc(hcx, hcy, holeDrawR + 12, 0, Math.PI * 2);
+    ctx.arc(hcx, hcy, holeDrawR + 10, 0, Math.PI * 2);
     ctx.fill();
 
     // Actual Drilled Hole (White/Dark bore interior)
     ctx.fillStyle = isDark ? '#090d16' : '#f1f5f9';
     ctx.strokeStyle = isMatingOk ? '#14b8a6' : '#e11d48';
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 2.2;
     ctx.beginPath();
     ctx.arc(hcx, hcy, holeDrawR, 0, Math.PI * 2);
     ctx.fill();
@@ -685,13 +699,28 @@ function renderGdt2D(dx, dy, baseTol, totalTol, isPassPos, isPassBox) {
     ctx.setLineDash([]);
 
     // Fixed Mating Bolt / Gage Pin at True Position (icx, icy)
-    ctx.fillStyle = isMatingOk ? 'rgba(245, 158, 11, 0.85)' : 'rgba(225, 29, 72, 0.85)';
+    ctx.fillStyle = isMatingOk ? 'rgba(245, 158, 11, 0.72)' : 'rgba(225, 29, 72, 0.78)';
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.arc(icx, icy, pinDrawR, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
+
+    // Axis Tolerance Zone (⌀T_eff) right at the center of the bolt
+    ctx.fillStyle = 'rgba(6, 182, 212, 0.35)';
+    ctx.strokeStyle = '#06b6d4';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(icx, icy, Math.max(3, axisTolDrawR), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Actual Hole Center Axis Dot inside the inset
+    ctx.fillStyle = isMatingOk ? '#10b981' : '#ef4444';
+    ctx.beginPath();
+    ctx.arc(hcx, hcy, 3.5, 0, Math.PI * 2);
+    ctx.fill();
 
     // Bolt head hex/crosshair mark
     ctx.strokeStyle = 'rgba(15, 23, 42, 0.65)';
@@ -1344,15 +1373,24 @@ function updateGdt3DState(dx, dy, baseTol, totalTol, isPassPos, isPassBox) {
     const tedY = parseFloat(document.getElementById('gdt-ted-y').value) || 0;
     const actX = parseFloat(document.getElementById('gdt-actual-x').value) || 0;
     const actY = parseFloat(document.getElementById('gdt-actual-y').value) || 0;
+
+    const mmcHole = parseFloat(document.getElementById('gdt-lmc-limit')?.value) || 11.0;
+    const actHole = parseFloat(document.getElementById('gdt-actual-hole')?.value) || 11.20;
+    const boltKey = document.getElementById('gdt-bolt-select')?.value || 'M10_C';
+    const fType = document.getElementById('gdt-fastener-type')?.value || 'fixed';
+    const vcPinDia = (boltKey !== 'CUSTOM' && GDT_FASTENER_DB[boltKey])
+        ? GDT_FASTENER_DB[boltKey].majorDia
+        : Math.max(0.1, mmcHole - (fType === 'floating' ? 2 * baseTol : baseTol));
     
     const mode = gdtDisplayMode;
-    // Scale: dynamically scale so the tolerance zone is always roughly the same size in 3D
-    const S = 2.0 / Math.max(totalTol, 0.05); 
-    const baseRadius = Math.max((baseTol / 2) * S, 0.08);
-    const totalRadius = Math.max((totalTol / 2) * S, 0.1);
+    // TRUE PROPORTIONAL SCALE: Map actual hole diameter to ~4.2 units so Bolt (⌀F), Hole (⌀H), and Axis Tolerance (⌀T) are 100% true-to-scale!
+    const refHoleDia = Math.max(actHole, mmcHole, vcPinDia + totalTol, 1.0);
+    const S = 4.2 / refHoleDia;
+    const baseRadius = Math.max((baseTol / 2) * S, 0.03);
+    const totalRadius = Math.max((totalTol / 2) * S, 0.04);
     const boxSide = mode === 'inscribed'
-        ? Math.max((totalTol / Math.SQRT2) * S, 0.15)
-        : Math.max(totalTol * S, 0.2);
+        ? Math.max((totalTol / Math.SQRT2) * S, 0.06)
+        : Math.max(totalTol * S, 0.06);
     
     // TED position in 3D: X stays, Y(3D) is height, Z = -tedY (2D Y maps to negative 3D Z)
     const tedPx = tedX * S;
@@ -1370,7 +1408,7 @@ function updateGdt3DState(dx, dy, baseTol, totalTol, isPassPos, isPassBox) {
         }
     }
     
-    // Rebuild Base Cylinder at TED position
+    // Rebuild Base Axis Tolerance Cylinder at TED position
     gdtCylinder.geometry.dispose();
     gdtCylinder.geometry = new THREE.CylinderGeometry(baseRadius, baseRadius, GDT_HEIGHT, 48);
     gdtCylinder.position.set(tedPx, GDT_HEIGHT / 2, tedPz);
@@ -1386,16 +1424,16 @@ function updateGdt3DState(dx, dy, baseTol, totalTol, isPassPos, isPassBox) {
     if (gdtPartGroup) {
         gdtPartGroup.position.set(tedPx, 0, tedPz);
 
-        // Compute visual hole & mating bolt radii so physical clearance is 100% consistent with tolerance S
-        const mmcHole = parseFloat(document.getElementById('gdt-lmc-limit')?.value) || 10.0;
-        const actHole = parseFloat(document.getElementById('gdt-actual-hole')?.value) || 10.15;
         const radialDev = Math.sqrt(dx * dx + dy * dy);
         const effTotalClearanceDia = baseTol + Math.max(0, actHole - mmcHole);
         const minWallClearance = effTotalClearanceDia / 2 - radialDev;
         const isMatingOk = minWallClearance >= -1e-6 && actHole >= mmcHole;
 
-        const pinVisR = 1.15; // Fixed visual radius for the Virtual Condition mating bolt at TED
-        const holeVisR = Math.min(2.45, Math.max(0.55, pinVisR + (effTotalClearanceDia / 2) * S));
+        // Exact proportional radii using S:
+        // Effective bolt diameter for single-part clearance visualization = actHole - effTotalClearanceDia
+        const effBoltDia = Math.max(0.2, actHole - effTotalClearanceDia);
+        const pinVisR = (effBoltDia / 2) * S;
+        const holeVisR = (actHole / 2) * S;
         const relHoleX = dx * S;
         const relHoleZ = -dy * S;
 
@@ -1434,9 +1472,22 @@ function updateGdt3DState(dx, dy, baseTol, totalTol, isPassPos, isPassBox) {
             topRing.material.color.setHex(isMatingOk ? 0x38bdf8 : 0xf43f5e);
         }
 
+        const matingPinGroup = gdtPartGroup.getObjectByName('matingPinGroup');
+        if (matingPinGroup) {
+            matingPinGroup.visible = gdtShowBolt3D;
+        }
         const boltShaft = gdtPartGroup.getObjectByName('boltShaft');
         const boltHead = gdtPartGroup.getObjectByName('boltHead');
         if (boltShaft && boltHead) {
+            boltShaft.geometry.dispose();
+            boltShaft.geometry = new THREE.CylinderGeometry(pinVisR, pinVisR, GDT_HEIGHT + 0.6, 48);
+            boltHead.geometry.dispose();
+            const headR = pinVisR * 1.45;
+            boltHead.geometry = new THREE.CylinderGeometry(headR, headR, 0.55, 6);
+            if (boltHead.children[0]) {
+                boltHead.children[0].geometry.dispose();
+                boltHead.children[0].geometry = new THREE.EdgesGeometry(boltHead.geometry);
+            }
             boltShaft.material.color.setHex(isMatingOk ? 0xd97706 : 0xe11d48);
             boltHead.material.color.setHex(isMatingOk ? 0xf59e0b : 0xf43f5e);
         }
