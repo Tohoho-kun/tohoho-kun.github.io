@@ -12,10 +12,64 @@ let gdtIsDragging2D = false;
 let gdt2DLastScale = 100;
 const GDT_HEIGHT = 8;
 
+// Standard Fasteners Database (JIS B 1001 / ISO 273 / ASME B18.2.8 Clearance Holes)
+const GDT_FASTENER_DB = {
+    M3_C:    { name: 'M3×0.5 (並目)',    majorDia: 3.00,  pitch: 'P0.5',   holes: { fine: 3.20,  medium: 3.40,  coarse: 3.60 } },
+    M4_C:    { name: 'M4×0.7 (並目)',    majorDia: 4.00,  pitch: 'P0.7',   holes: { fine: 4.30,  medium: 4.50,  coarse: 4.80 } },
+    M5_C:    { name: 'M5×0.8 (並目)',    majorDia: 5.00,  pitch: 'P0.8',   holes: { fine: 5.30,  medium: 5.50,  coarse: 5.80 } },
+    M6_C:    { name: 'M6×1.0 (並目)',    majorDia: 6.00,  pitch: 'P1.0',   holes: { fine: 6.40,  medium: 6.60,  coarse: 7.00 } },
+    M8_C:    { name: 'M8×1.25 (並目)',   majorDia: 8.00,  pitch: 'P1.25',  holes: { fine: 8.40,  medium: 9.00,  coarse: 10.00 } },
+    M10_C:   { name: 'M10×1.5 (並目)',   majorDia: 10.00, pitch: 'P1.5',   holes: { fine: 10.50, medium: 11.00, coarse: 12.00 } },
+    M12_C:   { name: 'M12×1.75 (並目)',  majorDia: 12.00, pitch: 'P1.75',  holes: { fine: 13.00, medium: 13.50, coarse: 14.50 } },
+    M16_C:   { name: 'M16×2.0 (並目)',   majorDia: 16.00, pitch: 'P2.0',   holes: { fine: 17.00, medium: 17.50, coarse: 18.50 } },
+    M8_F:    { name: 'M8×1.0 (細目)',    majorDia: 8.00,  pitch: 'P1.0',   holes: { fine: 8.40,  medium: 9.00,  coarse: 10.00 } },
+    M10_F:   { name: 'M10×1.25 (細目)',  majorDia: 10.00, pitch: 'P1.25',  holes: { fine: 10.50, medium: 11.00, coarse: 12.00 } },
+    M12_F:   { name: 'M12×1.25 (細目)',  majorDia: 12.00, pitch: 'P1.25',  holes: { fine: 12.50, medium: 13.50, coarse: 14.50 } },
+    M16_F:   { name: 'M16×1.5 (細目)',   majorDia: 16.00, pitch: 'P1.5',   holes: { fine: 16.50, medium: 17.50, coarse: 18.50 } },
+    UNC_1_4: { name: '1/4"-20 UNC',      majorDia: 6.35,  pitch: '20 TPI', holes: { fine: 6.75,  medium: 7.14,  coarse: 7.94 } },
+    UNC_5_16:{ name: '5/16"-18 UNC',     majorDia: 7.94,  pitch: '18 TPI', holes: { fine: 8.33,  medium: 8.73,  coarse: 9.53 } },
+    UNC_3_8: { name: '3/8"-16 UNC',      majorDia: 9.53,  pitch: '16 TPI', holes: { fine: 9.92,  medium: 10.32, coarse: 11.11 } },
+    UNC_1_2: { name: '1/2"-13 UNC',      majorDia: 12.70, pitch: '13 TPI', holes: { fine: 13.49, medium: 14.29, coarse: 15.08 } },
+    UNF_1_4: { name: '1/4"-28 UNF',      majorDia: 6.35,  pitch: '28 TPI', holes: { fine: 6.75,  medium: 7.14,  coarse: 7.94 } },
+    UNF_5_16:{ name: '5/16"-24 UNF',     majorDia: 7.94,  pitch: '24 TPI', holes: { fine: 8.33,  medium: 8.73,  coarse: 9.53 } },
+    UNF_3_8: { name: '3/8"-24 UNF',      majorDia: 9.53,  pitch: '24 TPI', holes: { fine: 9.92,  medium: 10.32, coarse: 11.11 } },
+    UNF_1_2: { name: '1/2"-20 UNF',      majorDia: 12.70, pitch: '20 TPI', holes: { fine: 13.49, medium: 14.29, coarse: 15.08 } }
+};
+
+function applyFastenerSelection() {
+    const boltKey = document.getElementById('gdt-bolt-select')?.value || 'M10_C';
+    if (boltKey === 'CUSTOM') return;
+    const spec = GDT_FASTENER_DB[boltKey];
+    if (!spec) return;
+
+    const series = document.getElementById('gdt-hole-series')?.value || 'medium';
+    const fType = document.getElementById('gdt-fastener-type')?.value || 'fixed';
+
+    const recHole = spec.holes[series] || spec.holes.medium;
+    const clearance = Math.max(0.05, recHole - spec.majorDia);
+    const reqTol = fType === 'floating' ? (clearance / 2) : clearance;
+
+    const lmcEl = document.getElementById('gdt-lmc-limit');
+    const actHoleEl = document.getElementById('gdt-actual-hole');
+    const tolEl = document.getElementById('gdt-tolerance');
+
+    if (lmcEl) lmcEl.value = recHole.toFixed(2);
+    if (actHoleEl) actHoleEl.value = (recHole + 0.15).toFixed(2);
+    if (tolEl) tolEl.value = reqTol.toFixed(2);
+
+    const summaryEl = document.getElementById('gdt-bolt-spec-summary');
+    if (summaryEl) {
+        const seriesName = series === 'fine' ? '1級(精)' : series === 'medium' ? '2級(中)' : '3級(粗)';
+        const formulaStr = fType === 'floating' ? 'T=(H-F)/2' : 'T=H-F';
+        summaryEl.innerHTML = `${spec.name}: 軸最大 <strong>⌀${spec.majorDia.toFixed(2)}</strong> / ${seriesName}推奨穴 <strong>⌀${recHole.toFixed(2)}</strong> → 許容位置度 <strong>⌀${reqTol.toFixed(2)}</strong> (${formulaStr})`;
+    }
+}
+
 function initGdtSimulator() {
     setupGdtControls();
     setupGdtPresets();
     setupGdt2DDrag();
+    applyFastenerSelection();
 
     setTimeout(() => {
         try { initGdtScene(); } catch (e) { console.error('GD&T 3D init error:', e); }
@@ -47,8 +101,8 @@ function setupGdtPresets() {
                 document.getElementById('gdt-actual-y').value = (tedY + t * 0.45).toFixed(2);
             } else if (p === 'mmc_bonus') {
                 if (mmcEl) mmcEl.checked = true;
-                document.getElementById('gdt-lmc-limit').value = '10.00';
-                document.getElementById('gdt-actual-hole').value = '10.20';
+                const mmcHoleVal = parseFloat(document.getElementById('gdt-lmc-limit')?.value) || 11.0;
+                document.getElementById('gdt-actual-hole').value = (mmcHoleVal + 0.25).toFixed(2);
                 setGdtMode('both');
                 document.getElementById('gdt-actual-x').value = (tedX + t * 0.44).toFixed(2);
                 document.getElementById('gdt-actual-y').value = (tedY + t * 0.40).toFixed(2);
@@ -104,10 +158,40 @@ function setupGdtControls() {
         });
     }
 
+    // Fastener standard & fit series listeners
+    ['gdt-bolt-select', 'gdt-hole-series', 'gdt-fastener-type'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('change', () => {
+                applyFastenerSelection();
+                // Keep actual X/Y deviation reasonable relative to the new tolerance
+                const tedX = parseFloat(document.getElementById('gdt-ted-x').value) || 20;
+                const tedY = parseFloat(document.getElementById('gdt-ted-y').value) || 15;
+                const newTol = parseFloat(document.getElementById('gdt-tolerance').value) || 0.5;
+                document.getElementById('gdt-actual-x').value = (tedX + newTol * 0.25).toFixed(2);
+                document.getElementById('gdt-actual-y').value = (tedY + newTol * 0.20).toFixed(2);
+                calculateGdt();
+            });
+        }
+    });
+
     // Input listeners
     const inputs = document.querySelectorAll('.gdt-controls input');
     inputs.forEach(input => {
-        input.addEventListener('input', calculateGdt);
+        input.addEventListener('input', () => {
+            // If user manually edits tolerance or MMC hole limit, update summary notice
+            if (input.id === 'gdt-tolerance' || input.id === 'gdt-lmc-limit') {
+                const summaryEl = document.getElementById('gdt-bolt-spec-summary');
+                const mmcH = parseFloat(document.getElementById('gdt-lmc-limit')?.value) || 11.0;
+                const tolV = parseFloat(document.getElementById('gdt-tolerance')?.value) || 1.0;
+                const fType = document.getElementById('gdt-fastener-type')?.value || 'fixed';
+                const pinD = Math.max(0.1, mmcH - (fType === 'floating' ? 2 * tolV : tolV));
+                if (summaryEl) {
+                    summaryEl.innerHTML = `手動設定: 相手軸最大 <strong>⌀${pinD.toFixed(2)}</strong> / 最小穴 <strong>⌀${mmcH.toFixed(2)}</strong> → 基本位置度 <strong>⌀${tolV.toFixed(2)}</strong>`;
+                }
+            }
+            calculateGdt();
+        });
     });
 
     // Random button
@@ -150,7 +234,11 @@ function calculateGdt() {
 
     const mmcHole = parseFloat(document.getElementById('gdt-lmc-limit')?.value) || 10.0;
     const actHole = parseFloat(document.getElementById('gdt-actual-hole')?.value) || 10.15;
-    const vcPinDia = Math.max(0.1, mmcHole - baseTol); // Virtual Condition mating pin diameter
+    const boltKey = document.getElementById('gdt-bolt-select')?.value || 'M10_C';
+    const fType = document.getElementById('gdt-fastener-type')?.value || 'fixed';
+    const vcPinDia = (boltKey !== 'CUSTOM' && GDT_FASTENER_DB[boltKey])
+        ? GDT_FASTENER_DB[boltKey].majorDia
+        : Math.max(0.1, mmcHole - (fType === 'floating' ? 2 * baseTol : baseTol));
 
     const useMmc = document.getElementById('gdt-mmc-toggle')?.checked || false;
     if (useMmc) {
@@ -175,10 +263,10 @@ function calculateGdt() {
     const isPassBox = Math.abs(dx) <= boxHalfTol && Math.abs(dy) <= boxHalfTol;
     const isPassPos = posError <= totalTol;
 
-    // Physical Mating Check: Min radial clearance between actual hole wall and Virtual Condition bolt at TED
-    // Hole radius = actHole/2 centered at (dx, dy); Bolt radius = vcPinDia/2 centered at (0, 0)
-    // Radial clearance on tightest side = (actHole/2) - (vcPinDia/2 + radialDev) = (actHole - vcPinDia - posError) / 2
-    const minWallClearance = (actHole - vcPinDia - posError) / 2;
+    // Physical Mating Check: Min radial clearance between actual hole wall and mating bolt
+    // Effective max radial offset allowed at MMC = baseTol/2; plus bonus/2 as hole grows
+    const effTotalClearanceDia = baseTol + Math.max(0, actHole - mmcHole);
+    const minWallClearance = (effTotalClearanceDia - posError) / 2;
     const explainEl = document.getElementById('gdt-mating-explain');
     if (explainEl) {
         if (actHole < mmcHole) {
@@ -523,9 +611,14 @@ function renderGdt2D(dx, dy, baseTol, totalTol, isPassPos, isPassBox) {
     // --- Mini Mating Bolt & Hole Cross-Section Inset (Bottom-Right Corner) ---
     const mmcHole = parseFloat(document.getElementById('gdt-lmc-limit')?.value) || 10.0;
     const actHole = parseFloat(document.getElementById('gdt-actual-hole')?.value) || 10.15;
-    const vcPinDia = Math.max(0.1, mmcHole - baseTol);
+    const boltKey = document.getElementById('gdt-bolt-select')?.value || 'M10_C';
+    const fType = document.getElementById('gdt-fastener-type')?.value || 'fixed';
+    const vcPinDia = (boltKey !== 'CUSTOM' && GDT_FASTENER_DB[boltKey])
+        ? GDT_FASTENER_DB[boltKey].majorDia
+        : Math.max(0.1, mmcHole - (fType === 'floating' ? 2 * baseTol : baseTol));
     const radialDev = Math.sqrt(dx * dx + dy * dy);
-    const minWallClearance = (actHole - vcPinDia) / 2 - radialDev;
+    const effTotalClearanceDia = baseTol + Math.max(0, actHole - mmcHole);
+    const minWallClearance = effTotalClearanceDia / 2 - radialDev;
     const isMatingOk = minWallClearance >= -1e-6 && actHole >= mmcHole;
 
     const insetW = 225;
@@ -547,17 +640,18 @@ function renderGdt2D(dx, dy, baseTol, totalTol, isPassPos, isPassBox) {
     ctx.stroke();
 
     // Title
+    const boltSpecName = (GDT_FASTENER_DB[boltKey] && GDT_FASTENER_DB[boltKey].name) || 'ボルト';
     ctx.fillStyle = isDark ? '#f8fafc' : '#0f172a';
-    ctx.font = '700 12px "Inter", sans-serif';
+    ctx.font = '700 11.5px "Inter", sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText('🔩 相手ボルト・実測穴 締結断面', ix + 12, iy + 20);
+    ctx.fillText(`🔩 ${boltSpecName} 締結断面`, ix + 12, iy + 20);
 
     const icx = ix + insetW / 2;
     const icy = iy + 95;
     // Exaggerate clearance difference relative to pin so user clearly sees the gap
     const pinDrawR = 36;
     const mag = 36 / Math.max(baseTol, 0.25); // visual magnification for gap/deviation
-    const holeDrawR = Math.min(68, Math.max(24, pinDrawR + ((actHole - vcPinDia) / 2) * mag));
+    const holeDrawR = Math.min(68, Math.max(24, pinDrawR + (effTotalClearanceDia / 2) * mag));
     const mmcHoleDrawR = Math.min(68, Math.max(24, pinDrawR + (baseTol / 2) * mag));
 
     const unitX = radialDev > 1e-6 ? (dx / radialDev) : 0;
@@ -830,12 +924,12 @@ function renderGdtDrawing(dx, dy, baseTol, totalTol, isPassPos, isPassBox, useMm
     }
     
     // Feature Control Frame (FCF) with datums - Only for Position mode
-    if (mode === 'both' || mode === 'pos') {
+    if (mode === 'both' || mode === 'pos' || mode === 'inscribed') {
         // Feature Control Frame (FCF) with datums
         ctx.fillStyle = '#fff';
         ctx.strokeStyle = '#fff';
         
-        // Calculate FCF size: symbol(25) + tol(60) + datumA(25) + datumB(25) = 135
+        // Calculate FCF size: symbol(25) + tol(65) + datumA(35) + datumB(35) = 160
         const fcfW = 160;
         const fcfH = 20;
         
@@ -849,6 +943,20 @@ function renderGdtDrawing(dx, dy, baseTol, totalTol, isPassPos, isPassBox, useMm
         if (fcfX + fcfW > canvasRight) fcfX = canvasRight - fcfW;
         if (fcfY < canvasTop) fcfY = canvasTop;
         if (fcfX < 10) fcfX = 10;
+
+        // Hole size callout above FCF (e.g. ⌀11.0 +0.3/0  [M10 2級キリ])
+        const mmcHoleDraw = parseFloat(document.getElementById('gdt-lmc-limit')?.value) || 11.0;
+        const boltKeyDraw = document.getElementById('gdt-bolt-select')?.value || 'M10_C';
+        const boltSpecDraw = GDT_FASTENER_DB[boltKeyDraw];
+        const holeCallout = boltSpecDraw
+            ? `⌀${mmcHoleDraw.toFixed(2)} +0.3/0 (${boltSpecDraw.name}用穴)`
+            : `⌀${mmcHoleDraw.toFixed(2)} +0.3/0`;
+        ctx.save();
+        ctx.font = 'bold 12px "JetBrains Mono", monospace';
+        ctx.fillStyle = '#38bdf8';
+        ctx.textAlign = 'left';
+        ctx.fillText(holeCallout, fcfX, fcfY - 8);
+        ctx.restore();
         
         // Leader line from hole to FCF
         ctx.beginPath();
@@ -1281,13 +1389,13 @@ function updateGdt3DState(dx, dy, baseTol, totalTol, isPassPos, isPassBox) {
         // Compute visual hole & mating bolt radii so physical clearance is 100% consistent with tolerance S
         const mmcHole = parseFloat(document.getElementById('gdt-lmc-limit')?.value) || 10.0;
         const actHole = parseFloat(document.getElementById('gdt-actual-hole')?.value) || 10.15;
-        const vcPinDia = Math.max(0.1, mmcHole - baseTol);
         const radialDev = Math.sqrt(dx * dx + dy * dy);
-        const minWallClearance = (actHole - vcPinDia) / 2 - radialDev;
+        const effTotalClearanceDia = baseTol + Math.max(0, actHole - mmcHole);
+        const minWallClearance = effTotalClearanceDia / 2 - radialDev;
         const isMatingOk = minWallClearance >= -1e-6 && actHole >= mmcHole;
 
         const pinVisR = 1.15; // Fixed visual radius for the Virtual Condition mating bolt at TED
-        const holeVisR = Math.min(2.45, Math.max(0.55, pinVisR + ((actHole - vcPinDia) / 2) * S));
+        const holeVisR = Math.min(2.45, Math.max(0.55, pinVisR + (effTotalClearanceDia / 2) * S));
         const relHoleX = dx * S;
         const relHoleZ = -dy * S;
 
