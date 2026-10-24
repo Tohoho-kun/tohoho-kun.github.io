@@ -1,445 +1,458 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>組織構造と認知バイアスの圏論的統合モデル</title>
-  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
-  <style>
-    :root{
-      --background:#eef2ff; --foreground:#1e1b4b;
-      --card:#ffffff; --border:#c7d2fe;
-      --muted-foreground:#5b6490;
-      --primary:#4f46e5; --primary-foreground:#ffffff;
-      --secondary:#e0e7ff; --secondary-foreground:#3730a3;
-      --c-cog:#2563eb; --c-pos:#d97706; --c-rep:#9333ea;
-      --c-cog-bg:#dbeafe; --c-pos-bg:#fef3c7; --c-rep-bg:#f3e8ff;
-    }
-    @media (prefers-color-scheme: dark){
-      :root{
-        --background:#0f1030; --foreground:#e8eaff;
-        --card:#1a1c47; --border:#3a3f8f;
-        --muted-foreground:#a5acd9;
-        --primary:#818cf8; --primary-foreground:#0f1030;
-        --secondary:#2a2e6b; --secondary-foreground:#c7d2fe;
-        --c-cog:#60a5fa; --c-pos:#fbbf24; --c-rep:#c084fc;
-        --c-cog-bg:#172554; --c-pos-bg:#422006; --c-rep-bg:#3b0764;
-      }
-    }
-    body{
-      background:
-        radial-gradient(900px 400px at 10% -10%, rgba(99,102,241,.25), transparent 60%),
-        radial-gradient(800px 400px at 90% 0%, rgba(236,72,153,.18), transparent 60%),
-        var(--background) !important;
-    }
-    header h1{
-      background:linear-gradient(90deg,var(--c-cog),var(--c-rep),#ec4899);
-      -webkit-background-clip:text; background-clip:text; color:transparent;
-    }
-    header > div:first-child{ border-left:4px solid var(--primary); padding-left:12px; }
-    #scenario-bar{ background:linear-gradient(135deg,var(--card),var(--secondary)) !important; }
-    #structure-banner,#inspector-panel{ border-top:4px solid var(--primary) !important; box-shadow:0 4px 16px rgba(79,70,229,.12) !important; }
-    #categories-grid > article{ border-top-width:4px !important; border-top-style:solid; }
-    #categories-grid > article:nth-child(1){ border-top-color:var(--c-cog); background:linear-gradient(180deg,var(--c-cog-bg),var(--card) 90px) !important; }
-    #categories-grid > article:nth-child(2){ border-top-color:var(--c-pos); background:linear-gradient(180deg,var(--c-pos-bg),var(--card) 90px) !important; }
-    #categories-grid > article:nth-child(3){ border-top-color:var(--c-rep); background:linear-gradient(180deg,var(--c-rep-bg),var(--card) 90px) !important; }
-    #categories-grid > article:nth-child(1) h3, #categories-grid > article:nth-child(1) .font-mono{ color:var(--c-cog); }
-    #categories-grid > article:nth-child(2) h3, #categories-grid > article:nth-child(2) .font-mono{ color:var(--c-pos); }
-    #categories-grid > article:nth-child(3) h3, #categories-grid > article:nth-child(3) .font-mono{ color:var(--c-rep); }
-    #categories-grid > article:nth-child(1) .node-btn{ border-left:3px solid var(--c-cog); }
-    #categories-grid > article:nth-child(2) .node-btn{ border-left:3px solid var(--c-pos); }
-    #categories-grid > article:nth-child(3) .node-btn{ border-left:3px solid var(--c-rep); }
-    .node-btn{ transition:all .2s cubic-bezier(.4,0,.2,1); background:var(--card) !important; }
-    .node-btn:hover{ transform:translateY(-2px); box-shadow:0 4px 12px rgba(79,70,229,.2); }
-    .active-ring{ outline:2px solid var(--primary); outline-offset:2px; }
-    button[aria-pressed="true"],button[aria-selected="true"]{ background:linear-gradient(135deg,#4f46e5,#9333ea) !important; color:#fff !important; border-color:transparent !important; }
-    #toggle-adaptation{ background:linear-gradient(135deg,#f59e0b,#ef4444) !important; color:#fff !important; border-color:transparent !important; }
-    .diagram-arrow{ stroke-dasharray:6 4; animation:flow 1.6s linear infinite; }
-    @keyframes flow{ to{ stroke-dashoffset:-20; } }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>組織認知の圏論マップ</title>
+<style>
+:root{
+  color-scheme: light dark;
+  --bg:#f5f6f8; --surface:rgba(255,255,255,.72); --surface-solid:#ffffff;
+  --line:#dde1e8; --edge:#b9c0cc; --text:#1c2230; --muted:#687083; --faint:#a2a9b6;
+  --node:#ffffff; --accent:#5468e8;
+  --cog:#6b8fd6; --pos:#b39a6e; --rep:#9686c4;
+  --ok:#3d9f8a; --ng:#c48b7f;
+  --shadow:0 10px 40px rgba(28,34,48,.08), 0 2px 8px rgba(28,34,48,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0b0e15; --surface:rgba(20,25,36,.72); --surface-solid:#141924;
+    --line:#232b3a; --edge:#3b4558; --text:#e5e8ef; --muted:#8f98aa; --faint:#5d6779;
+    --node:#121722; --accent:#8193ff;
+    --cog:#7fa2e8; --pos:#c9b085; --rep:#ab9be0;
+    --ok:#56c1a8; --ng:#d79c90;
+    --shadow:0 10px 40px rgba(0,0,0,.45), 0 2px 8px rgba(0,0,0,.3);
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:"Inter","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  background:var(--bg); color:var(--text); min-height:100vh;
+  -webkit-font-smoothing:antialiased; line-height:1.6;
+}
+.wrap{max-width:1320px;margin:0 auto;padding:28px 24px 40px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:22px}
+.kicker{font:500 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.18em;color:var(--faint);text-transform:uppercase}
+h1{font-weight:300;font-size:clamp(20px,2.4vw,28px);letter-spacing:.02em;margin-top:8px}
+h1 b{font-weight:600}
+.lead{font-size:13px;color:var(--muted);margin-top:6px;max-width:640px}
+
+/* controls */
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px}
+.seg{display:inline-flex;align-items:center;padding:3px;border-radius:999px;background:var(--surface);border:1px solid var(--line);backdrop-filter:blur(12px)}
+.seg button{
+  border:0;background:transparent;color:var(--muted);font:inherit;font-size:12px;
+  padding:6px 14px;border-radius:999px;cursor:pointer;transition:background .25s,color .25s;
+}
+.seg button:hover{color:var(--text)}
+.seg button[aria-pressed="true"]{background:var(--surface-solid);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.seg-label{font-size:11px;color:var(--faint);margin:0 4px 0 2px}
+.switch{
+  display:inline-flex;align-items:center;gap:10px;border:1px solid var(--line);background:var(--surface);
+  padding:5px 14px 5px 6px;border-radius:999px;cursor:pointer;font:inherit;font-size:12px;color:var(--muted);
+  backdrop-filter:blur(12px);
+}
+.switch .track{width:34px;height:20px;border-radius:999px;background:var(--line);position:relative;transition:background .3s}
+.switch .track::after{content:"";position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:var(--surface-solid);box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .3s}
+.switch[aria-checked="true"] .track{background:var(--ok)}
+.switch[aria-checked="true"] .track::after{transform:translateX(14px)}
+.switch[aria-checked="true"]{color:var(--text)}
+
+/* layout */
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px}
+@media (max-width:1000px){.grid{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);backdrop-filter:blur(16px)}
+.canvas{
+  position:relative;overflow:hidden;padding:8px;
+  background-image:radial-gradient(circle,var(--line) 1px,transparent 1.2px);
+  background-size:22px 22px;
+}
+.canvas svg{width:100%;height:auto;display:block;animation:fade .5s ease}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.hint{position:absolute;left:18px;bottom:12px;font-size:11px;color:var(--faint)}
+
+/* svg elements */
+.spoke{stroke:var(--line);stroke-width:1}
+.edge{fill:none;stroke:var(--edge);stroke-width:1.4;transition:stroke .25s,stroke-width .25s,opacity .35s}
+.edge.functor{stroke-width:1.8}
+.edge.dashed{stroke-dasharray:5 5}
+.edge.flow{stroke-dasharray:4 7;animation:flow 2.4s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-44}}
+.hit{fill:none;stroke:transparent;stroke-width:18;cursor:pointer}
+.elabel{font-size:11px;fill:var(--muted);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;paint-order:stroke;stroke:var(--bg);stroke-width:4px;pointer-events:none;transition:opacity .35s}
+.grp{cursor:pointer;outline:none}
+.grp:hover .edge,.grp:focus-visible .edge,.grp.on .edge{stroke:var(--accent);stroke-width:2.4}
+.grp:hover .elabel,.grp.on .elabel{fill:var(--accent)}
+.node circle.body{fill:var(--node);stroke-width:1.5;transition:stroke-width .25s,filter .25s}
+.node{transform-box:fill-box;transform-origin:center;transition:transform .3s cubic-bezier(.2,.8,.2,1),opacity .35s}
+.node:hover,.node:focus-visible,.node.on{transform:scale(1.08)}
+.node:hover circle.body,.node:focus-visible circle.body,.node.on circle.body{stroke-width:2.6;filter:drop-shadow(0 6px 14px rgba(84,104,232,.22))}
+.node .sym{font-size:13px;font-weight:600;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.node .lbl{font-size:11.5px;fill:var(--muted);text-anchor:middle;pointer-events:none}
+.hub .sym{font-size:15px}
+.hub .sub{font-size:11px;fill:var(--muted);text-anchor:middle;pointer-events:none}
+.halo{opacity:.10;animation:breathe 5s ease-in-out infinite}
+@keyframes breathe{50%{opacity:.18}}
+.dim{opacity:.14 !important}
+.fb-label{font-size:11.5px;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+
+/* panel */
+.panel{padding:22px;display:flex;flex-direction:column;gap:16px;align-self:start;position:sticky;top:16px}
+.panel h2{font-size:17px;font-weight:600;line-height:1.45}
+.panel .formula{font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:8px 12px}
+.panel dt{font-size:11px;letter-spacing:.06em;color:var(--faint);margin-bottom:4px}
+.panel dd{font-size:13px;line-height:1.75}
+.panel .sep{border-top:1px solid var(--line);padding-top:14px}
+.panel .accent dt{color:var(--accent)}
+.legend{display:grid;gap:8px;font-size:12px;color:var(--muted)}
+.legend span{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;vertical-align:-1px;border:1.5px solid}
+.pin-clear{align-self:flex-start;border:1px solid var(--line);background:transparent;color:var(--muted);font:inherit;font-size:11px;padding:4px 12px;border-radius:999px;cursor:pointer}
+.pin-clear:hover{color:var(--text)}
+
+/* tooltip */
+#tip{
+  position:fixed;z-index:50;max-width:300px;padding:14px 16px;border-radius:16px;
+  background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);
+  backdrop-filter:blur(18px) saturate(1.2);-webkit-backdrop-filter:blur(18px) saturate(1.2);
+  opacity:0;transform:translateY(6px) scale(.98);pointer-events:none;
+  transition:opacity .22s ease,transform .22s cubic-bezier(.2,.8,.2,1);
+}
+#tip.show{opacity:1;transform:none;pointer-events:auto}
+#tip .k{font:500 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.14em;color:var(--faint);text-transform:uppercase}
+#tip .t{font-size:14px;font-weight:600;margin-top:7px;line-height:1.45}
+#tip .s{font:11px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--accent);margin-top:4px}
+#tip .b{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.7}
+#tip .x{font-size:11px;color:var(--faint);margin-top:8px;border-top:1px solid var(--line);padding-top:6px}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none !important;transition:none !important}
+}
+</style>
 </head>
-<body class="bg-[var(--background)] text-[var(--foreground)] antialiased min-h-screen p-4 md:p-6">
-  <header class="max-w-7xl mx-auto mb-6 border-b border-[var(--border)] pb-4">
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-      <div>
-        <p class="text-xs font-mono uppercase tracking-wider text-[var(--muted-foreground)]">Category Theory × Organizational Pathology</p>
-        <h1 class="text-xl md:text-2xl font-bold mt-1">人間認知・立場主義・組織表象の圏論的構造化シミュレータ</h1>
-      </div>
-      <div class="flex flex-wrap gap-2" id="mode-tabs" role="tablist" aria-label="圏論構造モード切替"></div>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="kicker">Category Theory × Organization</div>
+      <h1><b>組織認知</b>の圏論マップ</h1>
+      <p class="lead">個人の実（𝒞_Cog）・立場の型（𝒞_Pos）・組織の名（𝒞_Rep）という3つの圏と、それらをつなぐ関手を一枚のネットワークとして描きます。</p>
     </div>
-    <p class="text-sm text-[var(--muted-foreground)] mt-2">
-      3つの圏（個体認知圏 𝒞_Cog・制度立場圏 𝒞_Pos・組織表象圏 𝒞_Rep）の対象・射・関手・モナド・余極限を同一の抽象度（状態空間と状態遷移）で可視化します。各要素をクリックすると圏論的定義と組織力学の対応を検査できます。
-    </p>
-    <div id="scenario-bar" class="mt-3 p-3 rounded-xl border border-[var(--border)] bg-[var(--card)]"></div>
+    <button type="button" class="switch" id="mode" role="switch" aria-checked="false">
+      <span class="track"></span><span id="mode-text">立場主義・閉鎖系</span>
+    </button>
   </header>
 
-  <main class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
-    <!-- Left / Center: Interactive Commutative Diagram & 3 Categories -->
-    <section class="lg:col-span-8 space-y-6" aria-label="圏と関手の可換図式">
-      <!-- Active Structure Banner -->
-      <div id="structure-banner" class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 shadow-sm"></div>
+  <div class="controls">
+    <div class="seg" id="scenarios" aria-label="具体例"></div>
+    <div class="seg" id="structures" aria-label="普遍構造"></div>
+  </div>
 
-      <!-- Interactive SVG Functor & Commutative Diagram Canvas -->
-      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 shadow-sm">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="text-base font-semibold">関手・自然変換・可換図式ビジュアライザ</h2>
-          <div class="flex items-center gap-2">
-            <button type="button" id="toggle-adaptation" class="text-xs px-3 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--secondary)] text-[var(--secondary-foreground)] font-medium hover:opacity-90">
-              現在：立場主義・閉鎖モード（クリックで動的適応・引き戻しモードへ切替）
-            </button>
-          </div>
-        </div>
-        <div id="svg-container" class="w-full overflow-x-auto"></div>
-      </div>
-
-      <!-- 3 Categories Parallel Matrix -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="categories-grid"></div>
+  <div class="grid">
+    <section class="card canvas" aria-label="圏と関手のネットワーク図">
+      <div id="graph"></div>
+      <div class="hint">ノードや線にカーソルを合わせると説明が出ます ・ クリックで右側に固定</div>
     </section>
-
-    <!-- Right: Detailed Mathematical & Organizational Inspector -->
-    <aside class="lg:col-span-4 space-y-4" aria-label="詳細インスペクタ">
-      <div id="inspector-panel" class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-5 shadow-sm sticky top-4"></div>
-    </aside>
-  </main>
-
-  <script>
-    const MODEL = {"categories": [{"id": "C_Cog", "symbol": "𝒞_Cog", "name": "個体認知圏 (Cognitive Category)", "abstraction": "ミクロ状態空間：生物学的・心理的個体状態と内面的価値評価", "objects": [{"id": "Cog_Surv", "label": "O₁: 生存可能性状態", "desc": "物理的・社会的・代謝的生存の維持水準（孤立回避・エネルギー節約）"}, {"id": "Cog_Self", "label": "O₂: 自我統一性状態", "desc": "自己同一性・有能感・認知的一貫性が保持された内面状態"}, {"id": "Cog_Cap", "label": "O₃: 実質的能力状態", "desc": "個体が保有する固有の暗黙知・批判的思考力・実務遂行能力（『実』）"}], "morphisms": [{"id": "f_loss", "from": "Cog_Cap", "to": "Cog_Surv", "symbol": "f_loss : O₃ → O₁", "name": "損失回避・負の強化", "desc": "減点や排斥リスクを回避するため、突出した能力行使を抑制し安全領域へ遷移する射"}, {"id": "f_conf", "from": "Cog_Surv", "to": "Cog_Self", "symbol": "f_conf : O₁ → O₂", "name": "確証バイアス・不協和解消", "desc": "生存脅威や不都合な現実を遮断し、自己の正当性と一貫性を防衛する射"}, {"id": "id_cog", "from": "Cog_Self", "to": "Cog_Self", "symbol": "id_Cog : O₂ → O₂", "name": "現状維持バイアス（恒等射）", "desc": "参照点を現在状態に固定し、認知的負荷を最小化する恒等変換"}]}, {"id": "C_Pos", "symbol": "𝒞_Pos", "name": "制度立場圏 (Positional Category)", "abstraction": "メソ状態空間：組織構造から割り当てられた役割規定（型）と手続き遷移", "objects": [{"id": "Pos_Gov", "label": "P₁: 経営統治層の立場", "desc": "全体統制・方針策定を担う制度的役職（現場から空間的に分離された位置）"}, {"id": "Pos_Mid", "label": "P₂: 中間管理層の立場", "desc": "上下の緩衝・領地（予算・人員）保全・手続き管理を担う制度的役職"}, {"id": "Pos_Exe", "label": "P₃: 現場実行層の立場", "desc": "規定プログラムの消化・実行時例外処理（Try-Catch）を担う制度的役職"}], "morphisms": [{"id": "g_proc", "from": "Pos_Gov", "to": "Pos_Mid", "symbol": "g_rule : P₁ → P₂", "name": "規則・目標の演繹的下達", "desc": "抽象化された単一指標や標準手続きを上位から下位へ賦課する制度的射"}, {"id": "g_try", "from": "Pos_Mid", "to": "Pos_Exe", "symbol": "g_try : P₂ → P₃", "name": "手続責任・例外抑制の委譲", "desc": "任期中の無事故・前例踏襲・85〜90%微小未達の維持を要請する制度的射"}, {"id": "id_pos", "from": "Pos_Mid", "to": "Pos_Mid", "symbol": "id_Pos : P₂ → P₂", "name": "前例踏襲（恒等射）", "desc": "思考と結果責任を制度的役割へアウトソーシングし、型を反復維持する恒等変換"}]}, {"id": "C_Rep", "symbol": "𝒞_Rep", "name": "組織表象圏 (Representational Category)", "abstraction": "マクロ状態空間：組織内で公式に流通する記号・定量指標・承認文書（『名』）", "objects": [{"id": "Rep_Doc", "label": "R₁: 公式稟議・報告表象", "desc": "合議制と減点回避フィルタを通過し、政治的に平滑化された公式文書"}, {"id": "Rep_KPI", "label": "R₂: 定量評価・単位表象", "desc": "実態から切り離され自己目的化した測定値（KPI達成率・履修単位・正常終了コード）"}, {"id": "Rep_AI", "label": "R₃: 洗浄済ナレッジ表象", "desc": "生成AI・知識管理システムにより論理的流暢さと客観的権威が付与された表象"}], "morphisms": [{"id": "h_game", "from": "Rep_Doc", "to": "Rep_KPI", "symbol": "h_game : R₁ → R₂", "name": "指標ゲーミング（グッドハート射）", "desc": "実質的価値ではなく測定数値のみを最適化する記号間の変換プロセス"}, {"id": "h_wash", "from": "Rep_KPI", "to": "Rep_AI", "symbol": "F_AI : R₂ → R₃", "name": "事実洗浄（Truth Washing）", "desc": "生成文脈（保身・忖度）を捨象したまま統計的流暢さを付与し、客観的教条へ昇華させる射"}, {"id": "id_rep", "from": "Rep_AI", "to": "Rep_AI", "symbol": "id_Rep : R₃ → R₃", "name": "記号の自己言及的保持（恒等射）", "desc": "物理的現実と接地しないまま表象空間内部で整合性を循環させる恒等変換"}]}], "structures": [{"id": "adjunction", "title": "1. 随伴関手 (L ⊣ U) ：忘却と型への同化", "formula": "Hom_𝒞_Cog(L(P), C) ≅ Hom_𝒞_Pos(P, U(C))", "summary": "忘却関手 U が個人の実質的能力・内面葛藤（実）を捨象して『立場 P』へ射影し、左随伴 L が『立場から期待される標準的な型 L(P)』を内面へ付与する普遍的対応。", "mechanism": "個体が組織内で独自の判断を下すよりも、立場 P が要求する定型役割 L(P) に自己を同化させる方が、認知的代謝コストと減点リスクを同時に最小化できる（普遍性）。"}, {"id": "monad", "title": "2. 立場主義モナド (T = U ∘ L, η, μ) ：型の極限追求", "formula": "η : Id ⇒ T （責任の外部化）,  μ : T² ⇒ T （手続きの自己増殖）", "summary": "随伴から生じる自己関手 T はモナドを形成する。『型を守るための型（手続きのための手続き）』が無限に反復されても T の内部に閉じ込められる。", "mechanism": "クライスリ射 f : X → T(Y) により、すべての業務出力 Y には『立場上の免責条件・予算確保の口実（85〜90%の微小未達）』というモナド的文脈 T が不可分に結合される（パーキンソンの法則）。"}, {"id": "colimit", "title": "3. 余極限 (Colimit) ：合成の誤謬と無責任の体系", "formula": "Colim (P₁ → P₂ → P₃) ⟶ ∅_ Accountability （結果責任の消滅）", "summary": "各階層・各工程（例：学年進行や部門間バトンパス）が『任期中のランタイム例外処理（手続責任）』のみを局所的に可換にした結果、全体の余極限において結果責任が消失する。", "mechanism": "局所図式では『規定手順の履行（Exit Code 0）』が成立しているが、大域的な貼り合わせ（余極限）においては、最終アウトプットの品質保証（SLA）を担う対象が存在しない構造的不整合が生じる。"}, {"id": "pullback", "title": "4. 引き戻し (Pullback) の欠如と回復：AI事実洗浄 vs 動的適応", "formula": "Pullback (𝒞_Cog ×_𝒞_Rep 𝒞_Pos) の喪失と再構築", "summary": "忘却関手によって現場の文脈が失われた表象圏 𝒞_Rep 上で AI 関手 F_AI を作用させると、実態への引き戻し（接地）を欠いたまま虚構が正当化される。", "mechanism": "これを打破するには、知己（メタ認知）・正名（名実の再結合）・無形（固定構造の流動化）・無用の用（余白対象の導入）によって、表象 R から実態 O への引き戻し射（接地検証）を制度的に再構築する必要がある。"}]};
-    let currentStructureIdx = 0;
-    let isAdaptedMode = false;
-    let selectedItem = { type: 'structure', data: MODEL.structures[0] };
-
-    function renderTabs() {
-      const container = document.getElementById('mode-tabs');
-      container.innerHTML = MODEL.structures.map((s, idx) => `
-        <button type="button" role="tab" aria-selected="${idx === currentStructureIdx}"
-          onclick="selectStructure(${idx})"
-          class="text-xs px-3 py-1.5 rounded-lg border border-[var(--border)] font-medium transition ${
-            idx === currentStructureIdx
-              ? 'bg-[var(--primary)] text-[var(--primary-foreground)] shadow-sm'
-              : 'bg-[var(--card)] text-[var(--foreground)] hover:opacity-80'
-          }">
-          ${s.title.split('：')[0]}
-        </button>
-      `).join('');
-    }
-
-    function renderBanner() {
-      const s = MODEL.structures[currentStructureIdx];
-      document.getElementById('structure-banner').innerHTML = `
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-[var(--border)] pb-3 mb-3">
-          <h2 class="text-base font-bold">${s.title}</h2>
-          <code class="text-xs font-mono px-2.5 py-1 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)]">${s.formula}</code>
-        </div>
-        <p class="text-sm mb-2">${s.summary}</p>
-        <p class="text-xs text-[var(--muted-foreground)]"><strong>構造的メカニズム：</strong>${s.mechanism}</p>
-      `;
-    }
-
-    function renderDiagram() {
-      const svgBox = document.getElementById('svg-container');
-      const modeColor = isAdaptedMode ? '#10b981' : '#f59e0b';
-      const functorLabel1 = isAdaptedMode
-        ? '正名・文脈保持関手 F_Preserve (実態と立場の整合)'
-        : '立場化・忘却関手 U : 𝒞_Cog → 𝒞_Pos (内面・実力の捨象)';
-      const functorLabel2 = isAdaptedMode
-        ? '多面評価・接地関手 F_Ground (名実の一致)'
-        : '表象化・指標関手 F_Metric : 𝒞_Pos → 𝒞_Rep (単一KPI・単位化)';
-      const bottomFeedback = isAdaptedMode
-        ? '引き戻し (Pullback) 成立：知己・正名・無形・無用の用による現場実態 (𝒞_Cog) への再接地と修得主義SLA保証'
-        : '引き戻し (Pullback) 欠如：余極限 (Colimit) における結果責任の消失（無責任の体系）と AI 事実洗浄 (F_AI) の閉鎖循環';
-
-      svgBox.innerHTML = `
-        <svg viewBox="0 0 860 280" class="w-full h-auto select-none" role="img" aria-label="3つの圏と関手の可換図式">
-          <defs>
-            <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-              <path d="M 0 1 L 10 5 L 0 9 z" fill="currentColor" />
-            </marker>
-          </defs>
-
-          <!-- Category Boxes -->
-          <rect x="20" y="25" width="220" height="175" rx="12" fill="var(--c-cog-bg)" stroke="var(--c-cog)" stroke-width="2" />
-          <text x="130" y="48" text-anchor="middle" font-size="13" font-weight="bold" fill="currentColor">個体認知圏 𝒞_Cog (実)</text>
-          <text x="130" y="68" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.75">O₁: 生存可能性 / O₂: 自我統一</text>
-          <text x="130" y="88" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.75">O₃: 実質的能力・内面状態</text>
-          <rect x="45" y="108" width="170" height="36" rx="6" fill="var(--c-cog)" fill-opacity="0.18" />
-          <text x="130" y="130" text-anchor="middle" font-size="12" font-family="monospace" fill="currentColor">f : 損失回避・確証バイアス</text>
-          <text x="130" y="175" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.65">恒等射 id_Cog : 現状維持</text>
-
-          <rect x="320" y="25" width="220" height="175" rx="12" fill="var(--c-pos-bg)" stroke="var(--c-pos)" stroke-width="2" />
-          <text x="430" y="48" text-anchor="middle" font-size="13" font-weight="bold" fill="currentColor">制度立場圏 𝒞_Pos (型)</text>
-          <text x="430" y="68" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.75">P₁: 統治 / P₂: 中間 / P₃: 現場</text>
-          <text x="430" y="88" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.75">モナド T = U∘L (役割の自己目的化)</text>
-          <rect x="345" y="108" width="170" height="36" rx="6" fill="var(--c-pos)" fill-opacity="0.18" />
-          <text x="430" y="130" text-anchor="middle" font-size="12" font-family="monospace" fill="currentColor">g : 手続履行・85-90%未達</text>
-          <text x="430" y="175" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.65">恒等射 id_Pos : 前例踏襲</text>
-
-          <rect x="620" y="25" width="220" height="175" rx="12" fill="var(--c-rep-bg)" stroke="var(--c-rep)" stroke-width="2" />
-          <text x="730" y="48" text-anchor="middle" font-size="13" font-weight="bold" fill="currentColor">組織表象圏 𝒞_Rep (名)</text>
-          <text x="730" y="68" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.75">R₁: 稟議 / R₂: 単位・KPI</text>
-          <text x="730" y="88" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.75">R₃: AI洗浄済ナレッジ表象</text>
-          <rect x="645" y="108" width="170" height="36" rx="6" fill="var(--c-rep)" fill-opacity="0.18" />
-          <text x="730" y="130" text-anchor="middle" font-size="12" font-family="monospace" fill="currentColor">h : 指標ハック・事実洗浄 F_AI</text>
-          <text x="730" y="175" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.65">恒等射 id_Rep : 自己言及</text>
-
-          <!-- Functor Arrows -->
-          <line x1="242" y1="95" x2="315" y2="95" stroke="currentColor" stroke-width="2" marker-end="url(#arrow)" />
-          <text x="278" y="83" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">${isAdaptedMode ? 'F_Preserve' : '忘却 U'}</text>
-
-          <line x1="315" y1="135" x2="242" y2="135" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrow)" />
-          <text x="278" y="153" text-anchor="middle" font-size="12" fill="currentColor" opacity="0.8">${isAdaptedMode ? '自律性保護' : '自由生成 L'}</text>
-
-          <line x1="542" y1="112" x2="615" y2="112" stroke="currentColor" stroke-width="2" marker-end="url(#arrow)" />
-          <text x="578" y="98" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">${isAdaptedMode ? 'F_Ground' : '表象化 F'}</text>
-
-          <!-- Bottom Feedback / Colimit / Pullback -->
-          <path d="M 730 202 C 730 255, 130 255, 130 205" fill="none" stroke="${modeColor}" stroke-width="2.5" class="diagram-arrow" marker-end="url(#arrow)" />
-          <rect x="145" y="226" width="570" height="28" rx="6" fill="var(--card)" stroke="${modeColor}" stroke-width="1.5" />
-          <text x="430" y="244" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">${bottomFeedback}</text>
-        </svg>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2 text-xs text-[var(--muted-foreground)] border-t border-[var(--border)] pt-2">
-          <div><strong>関手1：</strong>${functorLabel1}</div>
-          <div><strong>関手2：</strong>${functorLabel2}</div>
-        </div>
-      `;
-    }
-
-    function renderCategoriesGrid() {
-      const grid = document.getElementById('categories-grid');
-      grid.innerHTML = MODEL.categories.map(cat => `
-        <article class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 shadow-sm flex flex-col justify-between">
-          <div>
-            <div class="flex items-center justify-between border-b border-[var(--border)] pb-2 mb-2">
-              <h3 class="font-bold text-sm">${cat.name}</h3>
-              <span class="font-mono text-xs px-2 py-0.5 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)]">${cat.symbol}</span>
-            </div>
-            <p class="text-xs text-[var(--muted-foreground)] mb-3">${cat.abstraction}</p>
-
-            <h4 class="text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground)] mb-1.5">対象 (Objects : 状態空間)</h4>
-            <ul class="space-y-1.5 mb-4">
-              ${cat.objects.map(obj => `
-                <li>
-                  <button type="button" onclick='inspectItem("object", ${JSON.stringify(obj)}, "${cat.name}")'
-                    class="node-btn w-full text-left p-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-xs ${selectedItem.data && selectedItem.data.id === obj.id ? 'active-ring' : ''}">
-                    <div class="font-semibold">${obj.label}</div>
-                    <div class="text-[var(--muted-foreground)] truncate mt-0.5">${obj.desc}</div>
-                  </button>
-                </li>
-              `).join('')}
-            </ul>
-
-            <h4 class="text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground)] mb-1.5">射 (Morphisms : 状態遷移)</h4>
-            <ul class="space-y-1.5">
-              ${cat.morphisms.map(m => `
-                <li>
-                  <button type="button" onclick='inspectItem("morphism", ${JSON.stringify(m)}, "${cat.name}")'
-                    class="node-btn w-full text-left p-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-xs ${selectedItem.data && selectedItem.data.id === m.id ? 'active-ring' : ''}">
-                    <div class="font-mono font-semibold">${m.symbol}</div>
-                    <div class="font-medium mt-0.5">${m.name}</div>
-                  </button>
-                </li>
-              `).join('')}
-            </ul>
-          </div>
-        </article>
-      `).join('');
-    }
-
-    function renderInspector() {
-      const panel = document.getElementById('inspector-panel');
-      const item = selectedItem.data;
-      if (selectedItem.type === 'structure') {
-        panel.innerHTML = `
-          <div class="text-xs font-mono uppercase text-[var(--muted-foreground)]">Universal Construction Inspector</div>
-          <h2 class="text-lg font-bold mt-1 mb-2">${item.title}</h2>
-          <div class="p-2.5 rounded-lg bg-[var(--secondary)] text-[var(--secondary-foreground)] font-mono text-xs mb-4">${item.formula}</div>
-          <dl class="space-y-3 text-sm">
-            <div>
-              <dt class="font-semibold text-xs text-[var(--muted-foreground)] uppercase">圏論的定義（同一抽象度）</dt>
-              <dd class="mt-1 leading-relaxed">${item.summary}</dd>
-            </div>
-            <div>
-              <dt class="font-semibold text-xs text-[var(--muted-foreground)] uppercase">組織・社会システムにおける発現機構</dt>
-              <dd class="mt-1 leading-relaxed">${item.mechanism}</dd>
-            </div>
-          </dl>
-        `;
-      } else {
-        const isObj = selectedItem.type === 'object';
-        panel.innerHTML = `
-          <div class="text-xs font-mono uppercase text-[var(--muted-foreground)]">${selectedItem.catName} / ${isObj ? 'Object (対象)' : 'Morphism (射)'}</div>
-          <h2 class="text-lg font-bold mt-1 mb-2">${isObj ? item.label : item.name}</h2>
-          ${!isObj ? `<div class="p-2 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)] font-mono text-xs mb-3">${item.symbol}</div>` : ''}
-          <dl class="space-y-3 text-sm">
-            <div>
-              <dt class="font-semibold text-xs text-[var(--muted-foreground)] uppercase">状態空間・状態遷移の定義</dt>
-              <dd class="mt-1 leading-relaxed">${item.desc}</dd>
-            </div>
-            <div class="border-t border-[var(--border)] pt-3">
-              <dt class="font-semibold text-xs text-[var(--muted-foreground)] uppercase">抽象度の整合性検証</dt>
-              <dd class="mt-1 text-xs text-[var(--muted-foreground)] leading-relaxed">
-                ${isObj
-                  ? '本対象は他の圏の対象と同様、「特定の観察断面におけるシステムの状態空間（State Space）」として同一の抽象度で定義されています。'
-                  : '本射は他の圏の射と同様、「目的関数（生存可能性・自我統一性・制度的利得）を最大化する状態遷移プロセス」として同一の抽象度で定義されています。'}
-              </dd>
-            </div>
-          </dl>
-        `;
-      }
-    }
-
-    window.selectStructure = function(idx) {
-      currentStructureIdx = idx;
-      selectedItem = { type: 'structure', data: MODEL.structures[idx] };
-      renderAll();
-    };
-
-    window.inspectItem = function(type, data, catName) {
-      selectedItem = { type, data, catName };
-      renderCategoriesGrid();
-      renderInspector();
-    };
-
-    document.getElementById('toggle-adaptation').addEventListener('click', function() {
-      isAdaptedMode = !isAdaptedMode;
-      this.textContent = isAdaptedMode
-        ? '現在：動的適応・引き戻し（再接地）モード（クリックで立場主義・閉鎖モードへ切替）'
-        : '現在：立場主義・閉鎖モード（クリックで動的適応・引き戻しモードへ切替）';
-      renderDiagram();
-    });
-
-    function renderAll() {
-      renderTabs();
-      renderBanner();
-      renderDiagram();
-      renderCategoriesGrid();
-      renderInspector();
-    }
-
-    renderAll();
-  </script>
+    <aside class="card panel" id="panel" aria-live="polite"></aside>
+  </div>
+</div>
+<div id="tip" role="tooltip"></div>
 
 <script>
+const MODEL = {"categories": [{"id": "C_Cog", "symbol": "𝒞_Cog", "name": "個体認知圏 (Cognitive Category)", "abstraction": "ミクロ状態空間：生物学的・心理的個体状態と内面的価値評価", "objects": [{"id": "Cog_Surv", "label": "O₁: 生存可能性状態", "desc": "物理的・社会的・代謝的生存の維持水準（孤立回避・エネルギー節約）"}, {"id": "Cog_Self", "label": "O₂: 自我統一性状態", "desc": "自己同一性・有能感・認知的一貫性が保持された内面状態"}, {"id": "Cog_Cap", "label": "O₃: 実質的能力状態", "desc": "個体が保有する固有の暗黙知・批判的思考力・実務遂行能力（『実』）"}], "morphisms": [{"id": "f_loss", "from": "Cog_Cap", "to": "Cog_Surv", "symbol": "f_loss : O₃ → O₁", "name": "損失回避・負の強化", "desc": "減点や排斥リスクを回避するため、突出した能力行使を抑制し安全領域へ遷移する射"}, {"id": "f_conf", "from": "Cog_Surv", "to": "Cog_Self", "symbol": "f_conf : O₁ → O₂", "name": "確証バイアス・不協和解消", "desc": "生存脅威や不都合な現実を遮断し、自己の正当性と一貫性を防衛する射"}, {"id": "id_cog", "from": "Cog_Self", "to": "Cog_Self", "symbol": "id_Cog : O₂ → O₂", "name": "現状維持バイアス（恒等射）", "desc": "参照点を現在状態に固定し、認知的負荷を最小化する恒等変換"}]}, {"id": "C_Pos", "symbol": "𝒞_Pos", "name": "制度立場圏 (Positional Category)", "abstraction": "メソ状態空間：組織構造から割り当てられた役割規定（型）と手続き遷移", "objects": [{"id": "Pos_Gov", "label": "P₁: 経営統治層の立場", "desc": "全体統制・方針策定を担う制度的役職（現場から空間的に分離された位置）"}, {"id": "Pos_Mid", "label": "P₂: 中間管理層の立場", "desc": "上下の緩衝・領地（予算・人員）保全・手続き管理を担う制度的役職"}, {"id": "Pos_Exe", "label": "P₃: 現場実行層の立場", "desc": "規定プログラムの消化・実行時例外処理（Try-Catch）を担う制度的役職"}], "morphisms": [{"id": "g_proc", "from": "Pos_Gov", "to": "Pos_Mid", "symbol": "g_rule : P₁ → P₂", "name": "規則・目標の演繹的下達", "desc": "抽象化された単一指標や標準手続きを上位から下位へ賦課する制度的射"}, {"id": "g_try", "from": "Pos_Mid", "to": "Pos_Exe", "symbol": "g_try : P₂ → P₃", "name": "手続責任・例外抑制の委譲", "desc": "任期中の無事故・前例踏襲・85〜90%微小未達の維持を要請する制度的射"}, {"id": "id_pos", "from": "Pos_Mid", "to": "Pos_Mid", "symbol": "id_Pos : P₂ → P₂", "name": "前例踏襲（恒等射）", "desc": "思考と結果責任を制度的役割へアウトソーシングし、型を反復維持する恒等変換"}]}, {"id": "C_Rep", "symbol": "𝒞_Rep", "name": "組織表象圏 (Representational Category)", "abstraction": "マクロ状態空間：組織内で公式に流通する記号・定量指標・承認文書（『名』）", "objects": [{"id": "Rep_Doc", "label": "R₁: 公式稟議・報告表象", "desc": "合議制と減点回避フィルタを通過し、政治的に平滑化された公式文書"}, {"id": "Rep_KPI", "label": "R₂: 定量評価・単位表象", "desc": "実態から切り離され自己目的化した測定値（KPI達成率・履修単位・正常終了コード）"}, {"id": "Rep_AI", "label": "R₃: 洗浄済ナレッジ表象", "desc": "生成AI・知識管理システムにより論理的流暢さと客観的権威が付与された表象"}], "morphisms": [{"id": "h_game", "from": "Rep_Doc", "to": "Rep_KPI", "symbol": "h_game : R₁ → R₂", "name": "指標ゲーミング（グッドハート射）", "desc": "実質的価値ではなく測定数値のみを最適化する記号間の変換プロセス"}, {"id": "h_wash", "from": "Rep_KPI", "to": "Rep_AI", "symbol": "F_AI : R₂ → R₃", "name": "事実洗浄（Truth Washing）", "desc": "生成文脈（保身・忖度）を捨象したまま統計的流暢さを付与し、客観的教条へ昇華させる射"}, {"id": "id_rep", "from": "Rep_AI", "to": "Rep_AI", "symbol": "id_Rep : R₃ → R₃", "name": "記号の自己言及的保持（恒等射）", "desc": "物理的現実と接地しないまま表象空間内部で整合性を循環させる恒等変換"}]}], "structures": [{"id": "adjunction", "title": "1. 随伴関手 (L ⊣ U) ：忘却と型への同化", "formula": "Hom_𝒞_Cog(L(P), C) ≅ Hom_𝒞_Pos(P, U(C))", "summary": "忘却関手 U が個人の実質的能力・内面葛藤（実）を捨象して『立場 P』へ射影し、左随伴 L が『立場から期待される標準的な型 L(P)』を内面へ付与する普遍的対応。", "mechanism": "個体が組織内で独自の判断を下すよりも、立場 P が要求する定型役割 L(P) に自己を同化させる方が、認知的代謝コストと減点リスクを同時に最小化できる（普遍性）。"}, {"id": "monad", "title": "2. 立場主義モナド (T = U ∘ L, η, μ) ：型の極限追求", "formula": "η : Id ⇒ T （責任の外部化）,  μ : T² ⇒ T （手続きの自己増殖）", "summary": "随伴から生じる自己関手 T はモナドを形成する。『型を守るための型（手続きのための手続き）』が無限に反復されても T の内部に閉じ込められる。", "mechanism": "クライスリ射 f : X → T(Y) により、すべての業務出力 Y には『立場上の免責条件・予算確保の口実（85〜90%の微小未達）』というモナド的文脈 T が不可分に結合される（パーキンソンの法則）。"}, {"id": "colimit", "title": "3. 余極限 (Colimit) ：合成の誤謬と無責任の体系", "formula": "Colim (P₁ → P₂ → P₃) ⟶ ∅_ Accountability （結果責任の消滅）", "summary": "各階層・各工程（例：学年進行や部門間バトンパス）が『任期中のランタイム例外処理（手続責任）』のみを局所的に可換にした結果、全体の余極限において結果責任が消失する。", "mechanism": "局所図式では『規定手順の履行（Exit Code 0）』が成立しているが、大域的な貼り合わせ（余極限）においては、最終アウトプットの品質保証（SLA）を担う対象が存在しない構造的不整合が生じる。"}, {"id": "pullback", "title": "4. 引き戻し (Pullback) の欠如と回復：AI事実洗浄 vs 動的適応", "formula": "Pullback (𝒞_Cog ×_𝒞_Rep 𝒞_Pos) の喪失と再構築", "summary": "忘却関手によって現場の文脈が失われた表象圏 𝒞_Rep 上で AI 関手 F_AI を作用させると、実態への引き戻し（接地）を欠いたまま虚構が正当化される。", "mechanism": "これを打破するには、知己（メタ認知）・正名（名実の再結合）・無形（固定構造の流動化）・無用の用（余白対象の導入）によって、表象 R から実態 O への引き戻し射（接地検証）を制度的に再構築する必要がある。"}]};
 const SCENARIOS = {"abstract": {"label": "① 抽象理論（純粋構造）", "badge": "Pure Theory", "desc": "特定の文脈に依存しない、状態空間と状態遷移の純粋な圏論的構造。", "objects": {"Cog_Surv": {"title": "O₁: 生存可能性状態", "example": "物理的・社会的・代謝的生存の維持水準（孤立回避・省エネ）"}, "Cog_Self": {"title": "O₂: 自我統一性状態", "example": "自己同一性・有能感・認知的一貫性が保持された内面状態"}, "Cog_Cap": {"title": "O₃: 実質的能力状態", "example": "個体が保有する固有の暗黙知・批判的思考力・実務遂行能力（『実』）"}, "Pos_Gov": {"title": "P₁: 経営統治層の立場", "example": "全体統制・方針策定を担う制度的役職（現場から空間的に分離）"}, "Pos_Mid": {"title": "P₂: 中間管理層の立場", "example": "上下の緩衝・領地（予算・人員）保全・手続き管理を担う役職"}, "Pos_Exe": {"title": "P₃: 現場実行層の立場", "example": "規定プログラムの消化・実行時例外処理（Try-Catch）を担う役職"}, "Rep_Doc": {"title": "R₁: 公式稟議・報告表象", "example": "合議制と減点回避フィルタを通過し平滑化された公式文書"}, "Rep_KPI": {"title": "R₂: 定量評価・単位表象", "example": "実態から切り離され自己目的化した測定値（KPI・単位・正常終了コード）"}, "Rep_AI": {"title": "R₃: 洗浄済ナレッジ表象", "example": "AI・知識管理により論理的流暢さと客観的権威が付与された表象"}}, "morphisms": {"f_loss": {"name": "損失回避・負の強化", "example": "減点や排斥リスクを避けるため突出した能力行使を抑制し安全領域へ遷移する"}, "f_conf": {"name": "確証バイアス・不協和解消", "example": "不都合な現実を遮断し自己の正当性と一貫性を防衛する"}, "id_cog": {"name": "現状維持バイアス（恒等射）", "example": "参照点を現在状態に固定し認知的負荷を最小化する"}, "g_proc": {"name": "規則・目標の演繹的下達", "example": "抽象化された単一指標や標準手続きを上位から下位へ賦課する"}, "g_try": {"name": "手続責任・例外抑制の委譲", "example": "任期中の無事故・前例踏襲・85〜90%微小未達の維持を要請する"}, "id_pos": {"name": "前例踏襲（恒等射）", "example": "思考と結果責任を制度的役割へ外部化し型を反復維持する"}, "h_game": {"name": "指標ゲーミング（グッドハート射）", "example": "実質的価値ではなく測定数値のみを最適化する記号変換"}, "h_wash": {"name": "事実洗浄（Truth Washing）", "example": "政治的文脈を捨象したまま統計的流暢さを付与し客観化する"}, "id_rep": {"name": "記号の自己言及的保持（恒等射）", "example": "物理的現実と接地しないまま表象空間内部で整合性を循環させる"}}}, "education": {"label": "② 学校教育・単位制度", "badge": "Public School System", "desc": "履修主義（時間拘束）と年功的バッチ処理により、卒業生の実質的自立（結果責任）が免責される構造。", "objects": {"Cog_Surv": {"title": "O₁: 教員の安泰・生徒の同調", "example": "保護者クレームや教育委員会の査問を避け、教室で浮かないよう同調する状態"}, "Cog_Self": {"title": "O₂: 『聖職者』『優等生』の自負", "example": "『子どものため』という道徳的自己物語と、経済合理性（損得・契約）の心理的抑圧"}, "Cog_Cap": {"title": "O₃: 真の学習到達度・批判的知性", "example": "生徒の本質的な思考力・自立技能、および教員の独自の教育的工夫（『実』）"}, "Pos_Gov": {"title": "P₁: 文科省・教育委員会の立場", "example": "学習指導要領や全国一律の通達を下達し、現場の個別文脈から隔離された統治立場"}, "Pos_Mid": {"title": "P₂: 校長・教頭・学年主任の立場", "example": "学校内の無事故・前例踏襲を管理し、外部への不祥事流出を防ぐ緩衝立場"}, "Pos_Exe": {"title": "P₃: 学級担任・教科担任の立場", "example": "初日から『先生』の記号を付与され、在校3年間のランタイム例外処理を担う立場"}, "Rep_Doc": {"title": "R₁: 指導要録・無事故報告書", "example": "『指導済み』『問題なし』として教育委員会へ提出される定型行政文書"}, "Rep_KPI": {"title": "R₂: 『履修単位』・卒業証書", "example": "理解度20%でも『席に座っていた時間』で認定される単位と、一斉卒業の正常終了スタンプ"}, "Rep_AI": {"title": "R₃: 教育DX・標準化カリキュラム表象", "example": "過去の指導記録や内申点データを集約し『客観的評価』として出力される教育データ"}}, "morphisms": {"f_loss": {"name": "トラブル回避・事なかれ主義", "example": "生徒の突出した疑問や挑戦を『管理リスク』として抑え、無風状態へ誘導する遷移"}, "f_conf": {"name": "聖職ナラティブによる正当化", "example": "長時間労働や非効率な部活指導を『教育的献身』として合理化し疑問を封じる遷移"}, "id_cog": {"name": "学校閉鎖ループの反復（恒等射）", "example": "生徒→教育学部→教員という単一OS内で外部社会の価値観を遮断し続ける恒等遷移"}, "g_proc": {"name": "学習指導要領・通達の一律賦課", "example": "個人の習熟度に関わらず、学年単位で同一の進行スケジュールを強制する遷移"}, "g_try": {"name": "在校中エラーハンドリングの委譲", "example": "卒業後の自立（SLA）は問わず、在校中の非行・事故のみをTry-Catchさせる遷移"}, "id_pos": {"name": "一斉入学・一斉卒業バッチ（恒等射）", "example": "毎年4月に入学させ3月に押し出すベルトコンベアを無批判に回し続ける恒等遷移"}, "h_game": {"name": "『適当に良い成績（75〜85点）』の演出", "example": "赤点補習の手間も異端児の摩擦も避ける、最も省エネな成績分布・単位認定への変換"}, "h_wash": {"name": "内申点・指導記録の客観化洗浄", "example": "『教員にとって都合の良い従順さ』を『主体性評価』という公的指標へ昇華させる変換"}, "id_rep": {"name": "学歴・単位記号の自己循環（恒等射）", "example": "基礎が未習得のままでも単位記号が積み上がり、次工程（上級学校・社会）へパスされる循環"}}}, "corporate_ai": {"label": "③ 企業組織・AI導入", "badge": "Corporate & AI / RAG", "desc": "KPI統制と社内AI（RAG）導入が、立場主義と結合して『85〜90%微小未達』や『事実洗浄』を増幅する構造。", "objects": {"Cog_Surv": {"title": "O₁: 社員の保身・減点回避状態", "example": "ノルマ引き上げ（ラチェット効果）や降格を避け、省エネで社内生存を図る内面状態"}, "Cog_Self": {"title": "O₂: 専門職・管理職としての自尊心", "example": "AIによる能力代替への脅威を防衛し、過去の投資判断（サンクコスト）を正当化する状態"}, "Cog_Cap": {"title": "O₃: 現場の暗黙知・実質的価値創出", "example": "顧客との定性的信頼、技術的負債の解消、長期的イノベーションの種（『実』）"}, "Pos_Gov": {"title": "P₁: 経営陣・CXOの立場", "example": "ダッシュボードの単一KPIとAI要約で全社を遠隔統制しようとする経営統治立場"}, "Pos_Mid": {"title": "P₂: 事業部長・課長（中間層）の立場", "example": "部下数と予算規模（領地）を保全し、不都合な現場情報を希釈して上申する立場"}, "Pos_Exe": {"title": "P₃: 現場担当者・エンジニアの立場", "example": "余力を隠蔽しつつ『AIが推奨した』という免責クッションを用いて業務を処理する立場"}, "Rep_Doc": {"title": "R₁: 稟議書・AI生成長文レポート", "example": "社内政治的配慮で角を丸め、AIで体裁を整えた膨大な報告ドキュメント"}, "Rep_KPI": {"title": "R₂: 単一KPI達成率（85〜90%微小未達）", "example": "100%達成によるノルマ増も50%未達の処罰も避け、来期予算増を要求できる最適数値表象"}, "Rep_AI": {"title": "R₃: RAG・社内AIが洗浄した『客観的戦略』", "example": "過去の歪曲された社内文書を学習したAIが『確信度95%』として出力する教条的ナレッジ"}}, "morphisms": {"f_loss": {"name": "余力隠蔽・突出の自己抑制", "example": "AIで業務が10倍速くなっても早期完了を申告せず、来期ノルマ増を防ぐ状態遷移"}, "f_conf": {"name": "AI迎合性（Sycophancy）による確証", "example": "上層部の仮説に迎合するAI出力のみを採択し、現場の異論を遮断する状態遷移"}, "id_cog": {"name": "コンコルド効果・撤退不能（恒等射）", "example": "失敗が明白なプロジェクトでも損失確定（自己否定）を避けて継続する恒等遷移"}, "g_proc": {"name": "マクナマラ的単一KPIの強制下達", "example": "測定不能な現場品質を捨象し、コール件数やコード行数のみを評価基準として課す遷移"}, "g_try": {"name": "『立場上＋AI上』の二重免責委譲", "example": "『規則通りかつAIの推奨通り実行した』として個人の結果責任を消去する遷移"}, "id_pos": {"name": "AIスロップ査読・手続き増殖（恒等射）", "example": "AIが生成した長文資料を別のAIで要約・回覧し、労働時間を100%埋め尽くす恒等遷移"}, "h_game": {"name": "アルゴリズム的指標ハック", "example": "顧客満足を犠牲にしてでも測定KPIの数値だけを最短距離で最大化する記号変換"}, "h_wash": {"name": "Garbage In, Gospel Out（事実洗浄）", "example": "社内政治で加工・希釈された過去ログをAIが流暢に統合し『科学的真理』へ昇華させる変換"}, "id_rep": {"name": "過剰脚本主義・単一故障点の隠蔽（恒等射）", "example": "AIが作った完璧な事業計画書に安住し、前提崩壊時のフェイルセーフを欠く循環"}}}, "bureaucracy": {"label": "④ 行政・官僚機構", "badge": "Public Bureaucracy", "desc": "法規・前例・合議制（スタンプラリー）により、個人の主体性が立場へ強く吸収され自浄作用が停止する構造。", "objects": {"Cog_Surv": {"title": "O₁: 官僚・職員の減点ゼロ生存状態", "example": "国会答弁や監査での失点を極小化し、任期中の無傷での異動・昇進を最優先する状態"}, "Cog_Self": {"title": "O₂: 『公僕・制度の番人』としての自負", "example": "手続きの厳格な遵守そのものを道徳的善とみなし、実質的弊害から目を背ける状態"}, "Cog_Cap": {"title": "O₃: 政策立案力・社会的課題解決力", "example": "市民・社会の現実的課題を解決する本来の専門的知見と改革意欲（『実』）"}, "Pos_Gov": {"title": "P₁: 政治任用層・本省幹部の立場", "example": "抽象的な政策スローガンを掲げ、現場運用は下位機構の裁量へ委ねる統治立場"}, "Pos_Mid": {"title": "P₂: 担当課長・調整官の立場", "example": "省益（予算枠・定員・権限領地）を保全し、関係各所との合議（根回し）を回す立場"}, "Pos_Exe": {"title": "P₃: 窓口・現場執行担当者の立場", "example": "内規と前例に厳密に一致する処理を行い、例外要求を『前例がない』と却下する立場"}, "Rep_Doc": {"title": "R₁: 決裁文書・合議スタンプラリー", "example": "数十個の承認印によって個人の責任所在が完全に希釈された公的決裁文書"}, "Rep_KPI": {"title": "R₂: 予算消化率100%・形式的実施件数", "example": "社会的課題が解決したかではなく『予算を余らせず使い切ったか』を示す表象"}, "Rep_AI": {"title": "R₃: 前例踏襲データベース・自動答弁表象", "example": "過去の答弁と通達のみから論理的に破綻のない回答を自動合成する閉鎖的知識体系"}}, "morphisms": {"f_loss": {"name": "前例なき決断の徹底忌避", "example": "独自の判断による失点リスクを恐れ、すべての判断根拠を過去の前例へ逃がす遷移"}, "f_conf": {"name": "多元的無知による集団的沈黙", "example": "制度の破綻を全員が察知しつつ『誰も異論を唱えていないから正しい』と同調する遷移"}, "id_cog": {"name": "些末事項（自転車置き場）への逃避", "example": "巨額予算や根本改革は素通りさせ、文言修正や備品選定の議論に時間を費やす恒等遷移"}, "g_proc": {"name": "通達・内規の細分化と縛りの強化", "example": "問題が起きるたびに解決ではなく『新たな禁止ルールと確認書類』を追加する遷移"}, "g_try": {"name": "『立場上そう言わざるを得ない』免責", "example": "生身の個人を後景に退かせ、役職の台本通りに発言・処理して道義的責任を遮断する遷移"}, "id_pos": {"name": "年度末予算消化と組織自己増殖（恒等射）", "example": "余剰予算を年度末に使い切り、翌年度の予算枠と人員を拡大し続ける恒等遷移"}, "h_game": {"name": "倒錯インセンティブによる課題温存", "example": "課題が完全解決すると組織と予算が消滅するため、85〜90%の解決に留め課題を存続させる変換"}, "h_wash": {"name": "形式合意の『公的決定』への昇華", "example": "誰も実質的検証をしていない合議文書を『適法かつ正当な機関決定』として確定させる変換"}, "id_rep": {"name": "無責任の体系の完全循環（恒等射）", "example": "上は『現場の裁量』と言い、下は『上の通達』と言い、外部環境の制約に直面するまで持続する循環"}}}};
 const STRUCT_EX = {"education": {"adjunction": "教員個人の教育観（実）は捨象され、「先生」という役割の標準型（指導要領どおりの進行・生徒指導の定型）に同化することが、最も摩擦の少ない適応となる。", "monad": "指導記録を残すための記録、点検のための点検表など、手続きを担保する手続きが増えても、すべて「学校運営の型」の内部に吸収される。", "colimit": "小学校→中学校→高校→大学の各工程が在校中の無事故のみを保証して次工程へ引き渡す結果、卒業後の自立に責任を負う主体が全体として存在しない。", "pullback": "修得主義（一定水準の到達確認まで進級・卒業させない）により、単位という表象から生徒の実際の到達度へ引き戻す検証経路が再構築される。"}, "corporate_ai": {"adjunction": "社員の専門的判断は捨象され、「課長」「担当者」という役割の型（前例・稟議ルート・KPI追従）に同化することが、減点回避上の最適解となる。", "monad": "AIで生成した資料を別のAIで要約し、その要約の確認会議を開くなど、手続きの多重化がすべて業務プロセスの型に吸収され、労働時間は短縮されない。", "colimit": "企画→開発→営業→保守の各部門が自部門KPIの達成のみを保証して引き渡す結果、顧客価値の最終責任を担う主体が全体として不在となる。", "pullback": "AI出力に生成文脈（作成者・承認経路・利害）のメタデータ、現場の生ログ、反論生成AIを併記することで、表象から現場実態への引き戻しが可能となる。"}, "bureaucracy": {"adjunction": "職員個人の政策判断は捨象され、役職の台本（前例・内規・合議手順）に同化することが、監査や答弁での失点を最小化する適応となる。", "monad": "問題が起きるたびに確認書類と承認手続きが追加されるが、それらはすべて「行政手続きの型」の内部に吸収され、手続き総量は単調に増加する。", "colimit": "本省→担当課→窓口の各階層が手続きの適法性のみを保証する結果、政策が社会課題を解決したかに責任を負う主体が全体として存在しない。", "pullback": "事後的な政策効果測定と、事前承認型から事後監査型への権限移行により、決裁文書という表象から社会的実態への引き戻し経路が再構築される。"}};
-let currentScenario = 'abstract';
-
-function scenarioBar() {
-  const box = document.getElementById('scenario-bar');
-  const sc = SCENARIOS[currentScenario];
-  box.innerHTML = `
-    <div class="flex flex-wrap items-center gap-2 mb-2">
-      <span class="text-xs font-semibold text-[var(--muted-foreground)]">具体例をあてはめる：</span>
-      ${Object.entries(SCENARIOS).map(([k, s]) => `
-        <button type="button" aria-pressed="${k === currentScenario}" onclick="selectScenario('${k}')"
-          class="text-xs px-3 py-1.5 rounded-lg border border-[var(--border)] font-medium transition ${
-            k === currentScenario ? 'bg-[var(--primary)] text-[var(--primary-foreground)] shadow-sm' : 'bg-[var(--background)] hover:opacity-80'}">
-          ${s.label}</button>`).join('')}
-    </div>
-    <p class="text-xs text-[var(--muted-foreground)]"><span class="font-mono px-1.5 py-0.5 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)] mr-1">${sc.badge}</span>${sc.desc}</p>`;
-}
-
-window.selectScenario = function(k) {
-  currentScenario = k;
-  renderAll();
-};
-function exOf(kind, id) {
-  const sc = SCENARIOS[currentScenario];
-  return (sc[kind] && sc[kind][id]) || null;
-}
-
-renderCategoriesGrid = function() {
-  const grid = document.getElementById('categories-grid');
-  grid.innerHTML = MODEL.categories.map(cat => `
-    <article class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 shadow-sm">
-      <div class="flex items-center justify-between border-b border-[var(--border)] pb-2 mb-2">
-        <h3 class="font-bold text-sm">${cat.name}</h3>
-        <span class="font-mono text-xs px-2 py-0.5 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)]">${cat.symbol}</span>
-      </div>
-      <p class="text-xs text-[var(--muted-foreground)] mb-3">${cat.abstraction}</p>
-      <h4 class="text-xs font-semibold text-[var(--muted-foreground)] mb-1.5">対象（状態空間）</h4>
-      <ul class="space-y-1.5 mb-4">
-        ${cat.objects.map(o => { const e = exOf('objects', o.id); return `
-          <li><button type="button" onclick='inspectItem("object", ${JSON.stringify(o)}, "${cat.name}")'
-            class="node-btn w-full text-left p-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-xs ${selectedItem.data && selectedItem.data.id === o.id ? 'active-ring' : ''}">
-            <div class="font-semibold">${e ? e.title : o.label}</div>
-            <div class="text-[var(--muted-foreground)] mt-0.5">${e ? e.example : o.desc}</div>
-          </button></li>`; }).join('')}
-      </ul>
-      <h4 class="text-xs font-semibold text-[var(--muted-foreground)] mb-1.5">射（状態遷移）</h4>
-      <ul class="space-y-1.5">
-        ${cat.morphisms.map(m => { const e = exOf('morphisms', m.id); return `
-          <li><button type="button" onclick='inspectItem("morphism", ${JSON.stringify(m)}, "${cat.name}")'
-            class="node-btn w-full text-left p-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-xs ${selectedItem.data && selectedItem.data.id === m.id ? 'active-ring' : ''}">
-            <div class="font-mono font-semibold">${m.symbol}</div>
-            <div class="font-medium mt-0.5">${e ? e.name : m.name}</div>
-            ${e && currentScenario !== 'abstract' ? `<div class="text-[var(--muted-foreground)] mt-0.5">${e.example}</div>` : ''}
-          </button></li>`; }).join('')}
-      </ul>
-    </article>`).join('');
-};
-
-renderInspector = function() {
-  const panel = document.getElementById('inspector-panel');
-  const item = selectedItem.data;
-  const sc = SCENARIOS[currentScenario];
-  const isAbs = currentScenario === 'abstract';
-  if (selectedItem.type === 'structure') {
-    const ex = !isAbs && STRUCT_EX[currentScenario] ? STRUCT_EX[currentScenario][item.id] : null;
-    panel.innerHTML = `
-      <div class="text-xs font-mono text-[var(--muted-foreground)]">普遍構造 ／ ${sc.label}</div>
-      <h2 class="text-lg font-bold mt-1 mb-2">${item.title}</h2>
-      <div class="p-2.5 rounded-lg bg-[var(--secondary)] text-[var(--secondary-foreground)] font-mono text-xs mb-4">${item.formula}</div>
-      <dl class="space-y-3 text-sm">
-        <div><dt class="font-semibold text-xs text-[var(--muted-foreground)]">圏論的定義</dt><dd class="mt-1 leading-relaxed">${item.summary}</dd></div>
-        <div><dt class="font-semibold text-xs text-[var(--muted-foreground)]">組織における発現機構</dt><dd class="mt-1 leading-relaxed">${item.mechanism}</dd></div>
-        ${ex ? `<div class="border-t border-[var(--border)] pt-3"><dt class="font-semibold text-xs text-[var(--primary)]">具体例：${sc.label}</dt><dd class="mt-1 leading-relaxed">${ex}</dd></div>`
-             : `<div class="border-t border-[var(--border)] pt-3 text-xs text-[var(--muted-foreground)]">上部の「具体例をあてはめる」ボタンで、この構造を学校・企業・行政の文脈に置き換えて確認できます。</div>`}
-      </dl>`;
-    return;
-  }
-  const isObj = selectedItem.type === 'object';
-  const absEx = SCENARIOS.abstract[isObj ? 'objects' : 'morphisms'][item.id];
-  const ex = exOf(isObj ? 'objects' : 'morphisms', item.id);
-  panel.innerHTML = `
-    <div class="text-xs font-mono text-[var(--muted-foreground)]">${selectedItem.catName} ／ ${isObj ? '対象' : '射'}</div>
-    <h2 class="text-lg font-bold mt-1 mb-2">${isObj ? item.label : item.name}</h2>
-    ${!isObj ? `<div class="p-2 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)] font-mono text-xs mb-3">${item.symbol}</div>` : ''}
-    <dl class="space-y-3 text-sm">
-      <div><dt class="font-semibold text-xs text-[var(--muted-foreground)]">抽象定義</dt><dd class="mt-1 leading-relaxed">${absEx ? absEx.example : item.desc}</dd></div>
-      ${!isAbs && ex ? `<div class="border-t border-[var(--border)] pt-3">
-        <dt class="font-semibold text-xs text-[var(--primary)]">具体例：${sc.label}</dt>
-        <dd class="mt-1 font-semibold">${isObj ? ex.title : ex.name}</dd>
-        <dd class="mt-1 leading-relaxed">${ex.example}</dd></div>` : ''}
-      <div class="border-t border-[var(--border)] pt-3">
-        <dt class="font-semibold text-xs text-[var(--muted-foreground)]">抽象度の整合性</dt>
-        <dd class="mt-1 text-xs text-[var(--muted-foreground)] leading-relaxed">${isObj
-          ? 'どのシナリオでも、この項目は「その観察断面におけるシステムの状態」として対応づけられており、抽象度は変わりません。'
-          : 'どのシナリオでも、この項目は「目的関数に基づく状態遷移」として対応づけられており、抽象度は変わりません。'}</dd>
-      </div>
-    </dl>`;
-};
-
-const _baseRenderDiagram = renderDiagram;
-renderDiagram = function() {
-  _baseRenderDiagram();
-  if (currentScenario === 'abstract') return;
-  const sc = SCENARIOS[currentScenario];
-  const col = (ids) => ids.map(id => `<li>${sc.objects[id].title}</li>`).join('');
-  document.getElementById('svg-container').insertAdjacentHTML('beforeend', `
-    <div class="mt-3 border-t border-[var(--border)] pt-3">
-      <p class="text-xs font-semibold mb-2">図式の対象への具体例の割り当て（${sc.label}）</p>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
-        <ul class="p-2 rounded-lg bg-[var(--background)] border border-[var(--border)] space-y-1"><li class="font-semibold">𝒞_Cog（実）</li>${col(['Cog_Surv','Cog_Self','Cog_Cap'])}</ul>
-        <ul class="p-2 rounded-lg bg-[var(--background)] border border-[var(--border)] space-y-1"><li class="font-semibold">𝒞_Pos（型）</li>${col(['Pos_Gov','Pos_Mid','Pos_Exe'])}</ul>
-        <ul class="p-2 rounded-lg bg-[var(--background)] border border-[var(--border)] space-y-1"><li class="font-semibold">𝒞_Rep（名）</li>${col(['Rep_Doc','Rep_KPI','Rep_AI'])}</ul>
-      </div>
-    </div>`);
-};
-
-const _baseRenderAll = renderAll;
-renderAll = function() { scenarioBar(); _baseRenderAll(); };
-renderAll();
 </script>
+<script>
+const NS = 'http://www.w3.org/2000/svg';
+let scenario = 'abstract', adapted = false, structure = null, pinned = null;
 
+const CATS = Object.fromEntries(MODEL.categories.map(c => [c.id, c]));
+const CAT_INFO = {
+  C_Cog: { color: 'var(--cog)', tag: '実', jp: '個体認知' },
+  C_Pos: { color: 'var(--pos)', tag: '型', jp: '制度立場' },
+  C_Rep: { color: 'var(--rep)', tag: '名', jp: '組織表象' }
+};
+const HUB = { C_Cog: [210, 320], C_Pos: [540, 300], C_Rep: [870, 320] };
+const NODE = {
+  Cog_Cap: [110, 165], Cog_Surv: [90, 478], Cog_Self: [290, 505],
+  Pos_Gov: [540, 122], Pos_Mid: [455, 490], Pos_Exe: [650, 490],
+  Rep_Doc: [968, 165], Rep_KPI: [992, 478], Rep_AI: [775, 505]
+};
+const R_HUB = 46, R_NODE = 26;
+const STRUCT_SHORT = { adjunction: '随伴', monad: 'モナド', colimit: '余極限', pullback: '引き戻し' };
+const FOCUS = {
+  adjunction: ['hub:C_Cog', 'hub:C_Pos', 'fun:U', 'fun:L'],
+  monad: ['hub:C_Pos', 'fun:U', 'fun:L', 'mor:id_pos', 'obj:Pos_Mid'],
+  colimit: ['hub:C_Pos', 'obj:Pos_Gov', 'obj:Pos_Mid', 'obj:Pos_Exe', 'mor:g_proc', 'mor:g_try', 'fb'],
+  pullback: ['fb', 'hub:C_Rep', 'hub:C_Cog', 'mor:h_wash', 'obj:Rep_AI', 'obj:Cog_Cap']
+};
+const FUNCTORS = {
+  closed: {
+    U: { label: 'U', title: '忘却関手 U', sym: 'U : 𝒞_Cog → 𝒞_Pos', body: '個人の能力や内面の葛藤を捨象し、「立場」だけを取り出す。' },
+    L: { label: 'L', title: '自由関手 L（L ⊣ U）', sym: 'L : 𝒞_Pos → 𝒞_Cog', body: '立場に期待される標準の「型」を個人の内面へ与える。U と随伴をなす。' },
+    F: { label: 'F', title: '表象化関手 F_Metric', sym: 'F : 𝒞_Pos → 𝒞_Rep', body: '立場の活動を単一指標・文書・単位という記号へ写し、流通させる。' },
+    fb: { label: '引き戻し 欠如', title: '引き戻し（Pullback）の欠如', sym: '𝒞_Rep ⇢ 𝒞_Cog は不成立', body: '表象から実態へ戻る検証経路がない。余極限で結果責任が消え、AIによる事実洗浄が閉じた循環になる。' }
+  },
+  adapted: {
+    U: { label: 'F_Preserve', title: '文脈保持関手 F_Preserve', sym: '𝒞_Cog → 𝒞_Pos', body: '能力や現場の文脈を捨てずに立場へ対応づける（正名）。' },
+    L: { label: '自律保護', title: '自律性保護', sym: '𝒞_Pos → 𝒞_Cog', body: '型を押しつけず、個人の判断余地（無用の用）を残して返す。' },
+    F: { label: 'F_Ground', title: '接地関手 F_Ground', sym: '𝒞_Pos → 𝒞_Rep', body: '多面的な評価で、記号と実態が一致するよう表象化する。' },
+    fb: { label: '引き戻し 成立', title: '引き戻し（Pullback）の成立', sym: '𝒞_Cog ×_𝒞_Rep 𝒞_Pos', body: '知己・正名・無形・無用の用によって、表象から現場の実態へ再接地する検証経路ができる。' }
+  }
+};
+
+/* ---------- geometry ---------- */
+const sub = (a, b) => [a[0] - b[0], a[1] - b[1]];
+const add = (a, b) => [a[0] + b[0], a[1] + b[1]];
+const mul = (a, k) => [a[0] * k, a[1] * k];
+const len = a => Math.hypot(a[0], a[1]) || 1;
+const unit = a => mul(a, 1 / len(a));
+const rot = (v, deg) => { const r = deg * Math.PI / 180; return [v[0] * Math.cos(r) - v[1] * Math.sin(r), v[0] * Math.sin(r) + v[1] * Math.cos(r)]; };
+const f = p => p.map(n => n.toFixed(1)).join(' ');
+
+function curve(a, b, ra, rb, bend, away) {
+  const m = mul(add(a, b), .5), d = sub(b, a), n = unit([-d[1], d[0]]);
+  let c = add(m, mul(n, bend));
+  if (away) { const c2 = add(m, mul(n, -bend)); if (len(sub(c2, away)) > len(sub(c, away))) c = c2; }
+  const s = add(a, mul(unit(sub(c, a)), ra + 2));
+  const e = add(b, mul(unit(sub(c, b)), rb + 5));
+  const mid = add(add(mul(s, .25), mul(c, .5)), mul(e, .25));
+  return { d: `M ${f(s)} Q ${f(c)} ${f(e)}`, mid };
+}
+const LOOP_DIR = { Cog_Self: [0.6, -0.8], Pos_Mid: [-1, 0], Rep_AI: [-0.6, -0.8] };
+const BEND = { g_proc: 95 };
+function loop(p, hub, r, id) {
+  const u = LOOP_DIR[id] ? unit(LOOP_DIR[id]) : unit(sub(p, hub));
+  const s = add(p, mul(rot(u, 35), r)), e = add(p, mul(rot(u, -35), r + 4));
+  const c1 = add(p, mul(rot(u, 55), r + 52)), c2 = add(p, mul(rot(u, -55), r + 52));
+  return { d: `M ${f(s)} C ${f(c1)} ${f(c2)} ${f(e)}`, mid: add(p, mul(u, r + 50)) };
+}
+
+/* ---------- svg helpers ---------- */
+function el(tag, attrs = {}, parent) {
+  const n = document.createElementNS(NS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(n);
+  return n;
+}
+function wrap(text, n = 10, lines = 2) {
+  const out = [];
+  for (let i = 0; i < text.length && out.length < lines; i += n) out.push(text.slice(i, i + n));
+  if (text.length > n * lines) out[lines - 1] = out[lines - 1].slice(0, n - 1) + '…';
+  return out;
+}
+function interactive(g, key, info) {
+  g.setAttribute('tabindex', '0');
+  g.setAttribute('role', 'button');
+  g.setAttribute('aria-label', info().title);
+  g.dataset.key = key;
+  g.addEventListener('pointerenter', () => showTip(g, info()));
+  g.addEventListener('pointerleave', hideTipSoon);
+  g.addEventListener('focus', () => showTip(g, info()));
+  g.addEventListener('blur', hideTipSoon);
+  const pin = () => { pinned = { key, info }; renderPanel(); markOn(); };
+  g.addEventListener('click', pin);
+  g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pin(); } });
+}
+
+/* ---------- content ---------- */
+const sc = () => SCENARIOS[scenario];
+const fn = () => FUNCTORS[adapted ? 'adapted' : 'closed'];
+function objInfo(cat, o) {
+  const e = sc().objects[o.id], a = SCENARIOS.abstract.objects[o.id];
+  return { kicker: `${cat.symbol} ・ 対象`, title: e.title, body: e.example, extra: scenario !== 'abstract' ? `抽象：${a.title}` : '' };
+}
+function morInfo(cat, m) {
+  const e = sc().morphisms[m.id];
+  return { kicker: `${cat.symbol} ・ 射`, title: e.name, sym: m.symbol, body: e.example };
+}
+function hubInfo(cat) {
+  return { kicker: '圏', title: cat.name, sym: cat.symbol, body: cat.abstraction };
+}
+function funInfo(k) { const x = fn()[k]; return { kicker: k === 'fb' ? '普遍構造' : '関手', title: x.title, sym: x.sym, body: x.body }; }
+
+/* ---------- render graph ---------- */
+function renderGraph() {
+  const box = document.getElementById('graph');
+  box.innerHTML = '';
+  const svg = el('svg', { viewBox: '0 0 1080 700', role: 'img', 'aria-label': '3つの圏と関手のネットワーク' }, box);
+  const defs = el('defs', {}, svg);
+  [['ar', 'var(--edge)'], ['ar-ok', 'var(--ok)'], ['ar-ng', 'var(--ng)']].forEach(([id, c]) => {
+    const mk = el('marker', { id, viewBox: '0 0 10 10', refX: 7, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' }, defs);
+    el('path', { d: 'M1 1.5 L8 5 L1 8.5', fill: 'none', stroke: c, 'stroke-width': 1.6, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, mk);
+  });
+  const lSpokes = el('g', {}, svg), lEdges = el('g', {}, svg), lNodes = el('g', {}, svg);
+
+  // feedback arc (pullback)
+  {
+    const F = fn().fb, color = adapted ? 'var(--ok)' : 'var(--ng)';
+    const g = el('g', { class: 'grp' }, lEdges);
+    const d = 'M 870 368 Q 900 660 540 660 Q 180 660 206 370';
+    el('path', { d, class: 'hit' }, g);
+    el('path', { d, class: 'edge functor ' + (adapted ? 'flow' : 'dashed'), stroke: color, style: `stroke:${color}`, 'marker-end': `url(#${adapted ? 'ar-ok' : 'ar-ng'})` }, g);
+    const w = F.label.length * 12 + 28;
+    el('rect', { x: 540 - w / 2, y: 646, width: w, height: 28, rx: 14, fill: 'var(--surface-solid)', stroke: color, 'stroke-width': 1 }, g);
+    const t = el('text', { x: 540, y: 660, class: 'fb-label', fill: color }, g); t.textContent = F.label;
+    interactive(g, 'fb', () => funInfo('fb'));
+  }
+
+  // functors between hubs
+  const fu = [
+    ['U', 'C_Cog', 'C_Pos', -70, false],
+    ['L', 'C_Pos', 'C_Cog', -70, true],
+    ['F', 'C_Pos', 'C_Rep', -70, false]
+  ];
+  fu.forEach(([k, a, b, bend, dashed]) => {
+    const c = curve(HUB[a], HUB[b], R_HUB, R_HUB, bend);
+    const g = el('g', { class: 'grp' }, lEdges);
+    el('path', { d: c.d, class: 'hit' }, g);
+    el('path', { d: c.d, class: 'edge functor' + (dashed ? ' dashed' : ''), 'marker-end': 'url(#ar)' }, g);
+    const t = el('text', { x: c.mid[0], y: c.mid[1] + (k === 'L' ? 16 : -8), class: 'elabel', 'text-anchor': 'middle' }, g);
+    t.textContent = fn()[k].label;
+    interactive(g, 'fun:' + k, () => funInfo(k));
+  });
+
+  // categories
+  MODEL.categories.forEach(cat => {
+    const ci = CAT_INFO[cat.id], hp = HUB[cat.id];
+    const objs = Object.fromEntries(cat.objects.map(o => [o.id, o]));
+
+    cat.objects.forEach(o => {
+      const p = NODE[o.id], u = unit(sub(p, hp));
+      const s = add(hp, mul(u, R_HUB + 4)), e = sub(p, mul(u, R_NODE + 4));
+      el('line', { x1: s[0], y1: s[1], x2: e[0], y2: e[1], class: 'spoke' }, lSpokes);
+    });
+
+    cat.morphisms.forEach(m => {
+      const g = el('g', { class: 'grp' }, lEdges);
+      const c = m.from === m.to ? loop(NODE[m.from], hp, R_NODE, m.from) : curve(NODE[m.from], NODE[m.to], R_NODE, R_NODE, BEND[m.id] || 34, hp);
+      el('path', { d: c.d, class: 'hit' }, g);
+      el('path', { d: c.d, class: 'edge', 'marker-end': 'url(#ar)' }, g);
+      const t = el('text', { x: c.mid[0], y: c.mid[1] + 4, class: 'elabel', 'text-anchor': 'middle' }, g);
+      t.textContent = m.symbol.split(':')[0].trim();
+      interactive(g, 'mor:' + m.id, () => morInfo(cat, m));
+    });
+
+    // hub
+    const hg = el('g', { class: 'node hub' }, lNodes);
+    el('circle', { cx: hp[0], cy: hp[1], r: R_HUB + 16, fill: ci.color, class: 'halo' }, hg);
+    el('circle', { cx: hp[0], cy: hp[1], r: R_HUB, class: 'body', stroke: ci.color }, hg);
+    const st = el('text', { x: hp[0], y: hp[1] - 7, class: 'sym', fill: ci.color }, hg); st.textContent = cat.symbol;
+    const sb = el('text', { x: hp[0], y: hp[1] + 15, class: 'sub' }, hg); sb.textContent = `${ci.tag} ・ ${ci.jp}`;
+    interactive(hg, 'hub:' + cat.id, () => hubInfo(cat));
+
+    // objects
+    cat.objects.forEach(o => {
+      const p = NODE[o.id];
+      const g = el('g', { class: 'node' }, lNodes);
+      el('circle', { cx: p[0], cy: p[1], r: R_NODE, class: 'body', stroke: ci.color }, g);
+      const sym = el('text', { x: p[0], y: p[1], class: 'sym', fill: ci.color }, g);
+      sym.textContent = o.label.split(':')[0].trim();
+      const title = sc().objects[o.id].title;
+      const name = title.includes(':') ? title.split(':').slice(1).join(':').trim() : title;
+      const below = p[1] > hp[1];
+      wrap(name).forEach((line, i, arr) => {
+        const y = below ? p[1] + R_NODE + 17 + i * 15 : p[1] - R_NODE - 10 - (arr.length - 1 - i) * 15;
+        const t = el('text', { x: p[0], y, class: 'lbl' }, g); t.textContent = line;
+      });
+      interactive(g, 'obj:' + o.id, () => objInfo(cat, o));
+    });
+  });
+
+  applyFocus();
+  markOn();
+}
+
+function applyFocus() {
+  const set = structure ? new Set(FOCUS[structure]) : null;
+  document.querySelectorAll('#graph [data-key]').forEach(n => n.classList.toggle('dim', !!set && !set.has(n.dataset.key)));
+  document.querySelectorAll('#graph .spoke').forEach(n => n.classList.toggle('dim', !!set));
+}
+function markOn() {
+  document.querySelectorAll('#graph [data-key]').forEach(n => n.classList.toggle('on', !!pinned && pinned.key === n.dataset.key));
+}
+
+/* ---------- tooltip ---------- */
+const tip = document.getElementById('tip');
+let hideTimer = null;
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function showTip(target, info) {
+  clearTimeout(hideTimer);
+  tip.innerHTML = `<div class="k">${esc(info.kicker)}</div><div class="t">${esc(info.title)}</div>`
+    + (info.sym ? `<div class="s">${esc(info.sym)}</div>` : '')
+    + `<div class="b">${esc(info.body)}</div>`
+    + (info.extra ? `<div class="x">${esc(info.extra)}</div>` : '');
+  const r = target.getBoundingClientRect();
+  tip.classList.add('show');
+  const tw = tip.offsetWidth, th = tip.offsetHeight, gap = 12;
+  let left = Math.min(Math.max(8, r.left + r.width / 2 - tw / 2), innerWidth - tw - 8);
+  let top = r.top - th - gap;
+  if (top < 8) top = r.bottom + gap;
+  tip.style.left = left + 'px';
+  tip.style.top = top + 'px';
+}
+function hideTipSoon() { clearTimeout(hideTimer); hideTimer = setTimeout(() => tip.classList.remove('show'), 160); }
+tip.addEventListener('pointerenter', () => clearTimeout(hideTimer));
+tip.addEventListener('pointerleave', hideTipSoon);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') tip.classList.remove('show'); });
+addEventListener('scroll', () => tip.classList.remove('show'), { passive: true });
+
+/* ---------- panel ---------- */
+function renderPanel() {
+  const p = document.getElementById('panel');
+  const s = sc();
+  let html = `<div><div class="kicker">${esc(s.badge)}</div><p style="font-size:12.5px;color:var(--muted);margin-top:8px">${esc(s.desc)}</p></div>`;
+  if (pinned) {
+    const i = pinned.info();
+    html += `<div class="sep"><div class="kicker">${esc(i.kicker)}</div><h2 style="margin-top:8px">${esc(i.title)}</h2></div>`
+      + (i.sym ? `<div class="formula">${esc(i.sym)}</div>` : '')
+      + `<dl><dt>説明</dt><dd>${esc(i.body)}</dd></dl>`
+      + (i.extra ? `<dl><dt>抽象との対応</dt><dd>${esc(i.extra.replace('抽象：', ''))}</dd></dl>` : '')
+      + `<button type="button" class="pin-clear" onclick="pinned=null;renderPanel();markOn()">固定を解除</button>`;
+  } else if (structure) {
+    const st = MODEL.structures.find(x => x.id === structure);
+    const ex = STRUCT_EX[scenario] && STRUCT_EX[scenario][structure];
+    html += `<div class="sep"><div class="kicker">普遍構造</div><h2 style="margin-top:8px">${esc(st.title)}</h2></div>`
+      + `<div class="formula">${esc(st.formula)}</div>`
+      + `<dl><dt>圏論的な意味</dt><dd>${esc(st.summary)}</dd></dl>`
+      + `<dl><dt>組織での現れ方</dt><dd>${esc(st.mechanism)}</dd></dl>`
+      + (ex ? `<dl class="sep accent"><dt>具体例 ・ ${esc(s.label)}</dt><dd>${esc(ex)}</dd></dl>` : '');
+  } else {
+    html += `<div class="sep"><h2>使い方</h2><p style="font-size:13px;color:var(--muted);margin-top:6px">ノードや線にカーソルを合わせると短い説明が出ます。クリックするとここに固定されます。上部の構造ボタンで、関係する部分だけを強調できます。</p></div>`
+      + `<div class="legend">`
+      + MODEL.categories.map(c => `<div><span style="border-color:${CAT_INFO[c.id].color}"></span>${esc(c.symbol)} ${esc(CAT_INFO[c.id].tag)} ・ ${esc(CAT_INFO[c.id].jp)}</div>`).join('')
+      + `<div style="margin-top:4px">大きな円 = 圏 ／ 小さな円 = 対象 ／ 矢印 = 射・関手</div></div>`;
+  }
+  p.innerHTML = html;
+}
+
+/* ---------- controls ---------- */
+function renderControls() {
+  document.getElementById('scenarios').innerHTML = '<span class="seg-label">具体例</span>' + Object.entries(SCENARIOS).map(([k, v]) =>
+    `<button type="button" aria-pressed="${k === scenario}" data-sc="${k}">${esc(v.label.replace(/^[①-⑳]\s*/, ''))}</button>`).join('');
+  document.getElementById('structures').innerHTML = '<span class="seg-label">構造</span>'
+    + `<button type="button" aria-pressed="${!structure}" data-st="">全体</button>`
+    + MODEL.structures.map(s => `<button type="button" aria-pressed="${s.id === structure}" data-st="${s.id}">${STRUCT_SHORT[s.id]}</button>`).join('');
+}
+document.getElementById('scenarios').addEventListener('click', e => {
+  const b = e.target.closest('button[data-sc]'); if (!b) return;
+  scenario = b.dataset.sc; renderAll();
+});
+document.getElementById('structures').addEventListener('click', e => {
+  const b = e.target.closest('button[data-st]'); if (!b) return;
+  structure = b.dataset.st || null; pinned = null;
+  renderControls(); applyFocus(); markOn(); renderPanel();
+});
+document.getElementById('mode').addEventListener('click', function () {
+  adapted = !adapted;
+  this.setAttribute('aria-checked', adapted);
+  document.getElementById('mode-text').textContent = adapted ? '動的適応・引き戻し' : '立場主義・閉鎖系';
+  renderGraph(); renderPanel();
+});
+
+function renderAll() { renderControls(); renderGraph(); renderPanel(); }
+renderAll();
+
+</script>
 </body>
 </html>
