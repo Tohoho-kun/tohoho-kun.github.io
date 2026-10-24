@@ -9,6 +9,27 @@ const i18n = {
         back_home: "ホームへ戻る",
         cpk_title: "プロセス・キャパビリティ シミュレーター",
         warning_text: "教育目的以外の使用は禁止します。企業でも教育目的であれば可です。生成したシミュレーションデータの悪用はしないでください",
+        edu_notice: "教育・学習用シミュレーター（実務データの改ざん・不正利用は厳禁）",
+        cpk_preset_label: "学習プリセット（ワンタッチ再現）",
+        cpk_p_ideal: "理想工程 (Cpk 1.67)",
+        cpk_p_capable: "標準管理 (Cpk 1.33)",
+        cpk_p_shift: "平均偏り (Cp高・Cpk低)",
+        cpk_p_spread: "ばらつき大 (Cpk < 1.0)",
+        cpk_params_title: "規格・母集団パラメータ",
+        cpk_Drawer_title: "サンプル測定値テーブル（クリックして開閉 / Excel貼付対応）",
+        grr_preset_label: "MSA シナリオプリセット",
+        grr_p_good: "優良測定系 (<10%)",
+        grr_p_ev: "機器ばらつき大 (EV支配)",
+        grr_p_av: "作業者差大 (AV支配)",
+        grr_p_res: "分解能不足 (NDC不足)",
+        grr_chart_comp: "変動成分の比較 (%Study Var / %Contribution)",
+        grr_chart_partop: "部品 × 作業者 測定値プロット (交互作用・再現性診断)",
+        gdt_presets_title: "ケーススタディ・プリセット",
+        gdt_p_center: "理想中心 (両方合格)",
+        gdt_p_corner: "57%面積の恩恵 (±NG / 位置度OK)",
+        gdt_p_mmc: "MMCボーナス救済",
+        gdt_p_fail: "公差外 (不合格)",
+        gdt_drag_hint: "● 測定点をドラッグして移動可能",
         usl_label: "規格上限 (USL)",
         lsl_label: "規格下限 (LSL)",
         mean_label: "理論平均 (μ)",
@@ -238,6 +259,27 @@ const i18n = {
         back_home: "Back to Home",
         cpk_title: "Process Capability Simulator",
         warning_text: "Use for non-educational purposes is prohibited. Corporate use is allowed if for educational purposes. Do not misuse the generated simulation data.",
+        edu_notice: "Educational Metrology Simulator (Misuse or falsification of production data is prohibited)",
+        cpk_preset_label: "Learning Presets (1-Click Scenarios)",
+        cpk_p_ideal: "6σ Ideal (Cpk 1.67)",
+        cpk_p_capable: "Capable (Cpk 1.33)",
+        cpk_p_shift: "Mean Shift (High Cp, Low Cpk)",
+        cpk_p_spread: "Wide Spread (Cpk < 1.0)",
+        cpk_params_title: "Spec & Population Parameters",
+        cpk_Drawer_title: "Sample Measurements Table (Click to toggle / Excel paste)",
+        grr_preset_label: "MSA Diagnostic Presets",
+        grr_p_good: "Ideal Gauge (<10%)",
+        grr_p_ev: "High Repeatability Error (EV)",
+        grr_p_av: "Operator Bias (AV)",
+        grr_p_res: "Coarse Resolution (Low ndc)",
+        grr_chart_comp: "Components of Variation (%Study Var / %Contribution)",
+        grr_chart_partop: "Part × Operator Interaction Plot",
+        gdt_presets_title: "Case Study Presets",
+        gdt_p_center: "Ideal Center (Both Pass)",
+        gdt_p_corner: "57% Area Gain (±NG / Pos OK)",
+        gdt_p_mmc: "MMC Bonus Rescue",
+        gdt_p_fail: "Out of Spec (Fail)",
+        gdt_drag_hint: "● Drag the measured point directly on canvas",
         usl_label: "Upper Spec Limit (USL)",
         lsl_label: "Lower Spec Limit (LSL)",
         mean_label: "Theoretical Mean (μ)",
@@ -467,6 +509,27 @@ const i18n = {
         back_home: "Volver al inicio",
         cpk_title: "Simulador de Capacidad del Proceso",
         warning_text: "Se prohíbe el uso para fines no educativos. El uso corporativo está permitido si es con fines educativos. No haga mal uso de los datos de simulación generados.",
+        edu_notice: "Simulador Educativo de Metrología (Prohibido el uso indebido de datos)",
+        cpk_preset_label: "Preajustes de Aprendizaje",
+        cpk_p_ideal: "Ideal 6σ (Cpk 1.67)",
+        cpk_p_capable: "Capaz (Cpk 1.33)",
+        cpk_p_shift: "Media Desplazada (Cp alto, Cpk bajo)",
+        cpk_p_spread: "Alta Dispersión (Cpk < 1.0)",
+        cpk_params_title: "Parámetros de Especificación y Población",
+        cpk_Drawer_title: "Tabla de Muestras (Clic para abrir / Pegar desde Excel)",
+        grr_preset_label: "Preajustes de Diagnóstico MSA",
+        grr_p_good: "Calibre Ideal (<10%)",
+        grr_p_ev: "Alto Error Repetibilidad (EV)",
+        grr_p_av: "Sesgo de Operador (AV)",
+        grr_p_res: "Resolución Insuficiente (ndc bajo)",
+        grr_chart_comp: "Componentes de Variación (%Var. Estudio / %Contribución)",
+        grr_chart_partop: "Gráfico de Interacción Pieza × Operador",
+        gdt_presets_title: "Casos de Estudio Predefinidos",
+        gdt_p_center: "Centro Ideal (Ambos OK)",
+        gdt_p_corner: "57% Más Área (±NG / Pos OK)",
+        gdt_p_mmc: "Rescate Bono MMC",
+        gdt_p_fail: "Fuera de Tolerancia (NG)",
+        gdt_drag_hint: "● Arrastre el punto medido directamente",
         usl_label: "Límite Espec. Superior (USL)",
         lsl_label: "Límite Espec. Inferior (LSL)",
         mean_label: "Media Teórica (μ)",
@@ -781,6 +844,16 @@ function initTheme() {
                     window.grrChart.options.scales.x.grid.color = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
                 }
                 window.grrChart.update();
+            }
+            if (window.grrPartOpChart) {
+                if (window.grrPartOpChart.options.scales && window.grrPartOpChart.options.scales.x) {
+                    window.grrPartOpChart.options.scales.x.grid.color = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+                    window.grrPartOpChart.options.scales.y.grid.color = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+                }
+                window.grrPartOpChart.update();
+            }
+            if (typeof calculateGdt === 'function' && document.getElementById('gdt-2d-canvas')) {
+                calculateGdt();
             }
         });
     }

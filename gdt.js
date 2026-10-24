@@ -2,26 +2,98 @@
 // ============================================
 
 let gdtScene, gdtCamera, gdtRenderer, gdtControls;
-let gdtGridHelper, gdtAxesGroup;
+let gdtGridHelper, gdtAxesGroup, gdtPartGroup;
 let gdtHudScene, gdtHudCamera, gdtHudAxesGroup;
-let gdtCylinder, gdtBox, gdtMeasLine, gdtMeasDot;
+let gdtCylinder, gdtBonusCylinder, gdtBox, gdtMeasPin, gdtMeasDot, gdtStatusRing;
 let gdtAutoRotate = true;
 let gdtAnimId = null;
 let gdtResizeHandler = null;
-const GDT_HEIGHT = 10;
+let gdtIsDragging2D = false;
+let gdt2DLastScale = 100;
+const GDT_HEIGHT = 8;
 
 function initGdtSimulator() {
     setupGdtControls();
-    
-    // Delayed init to ensure DOM layout is resolved and CDN scripts loaded
+    setupGdtPresets();
+    setupGdt2DDrag();
+
     setTimeout(() => {
-        try {
-            initGdtScene();
-        } catch (e) {
-            console.error('GD&T 3D init error:', e);
-        }
+        try { initGdtScene(); } catch (e) { console.error('GD&T 3D init error:', e); }
         calculateGdt();
-    }, 500);
+    }, 150);
+}
+
+function setupGdtPresets() {
+    const btns = document.querySelectorAll('[data-gdt-preset]');
+    btns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            btns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const p = btn.getAttribute('data-gdt-preset');
+            const tedX = parseFloat(document.getElementById('gdt-ted-x').value) || 20;
+            const tedY = parseFloat(document.getElementById('gdt-ted-y').value) || 15;
+            const t = parseFloat(document.getElementById('gdt-tolerance').value) || 0.5;
+            const mmcEl = document.getElementById('gdt-mmc-toggle');
+
+            if (p === 'center') {
+                if (mmcEl) mmcEl.checked = false;
+                setGdtMode('both');
+                document.getElementById('gdt-actual-x').value = (tedX + 0.06).toFixed(2);
+                document.getElementById('gdt-actual-y').value = (tedY - 0.04).toFixed(2);
+            } else if (p === 'corner') {
+                if (mmcEl) mmcEl.checked = false;
+                setGdtMode('both');
+                document.getElementById('gdt-actual-x').value = (tedX + t * 0.45).toFixed(2);
+                document.getElementById('gdt-actual-y').value = (tedY + t * 0.45).toFixed(2);
+            } else if (p === 'mmc_bonus') {
+                if (mmcEl) mmcEl.checked = true;
+                document.getElementById('gdt-lmc-limit').value = '10.00';
+                document.getElementById('gdt-actual-hole').value = '10.20';
+                setGdtMode('both');
+                document.getElementById('gdt-actual-x').value = (tedX + t * 0.44).toFixed(2);
+                document.getElementById('gdt-actual-y').value = (tedY + t * 0.40).toFixed(2);
+            } else if (p === 'fail') {
+                if (mmcEl) mmcEl.checked = false;
+                setGdtMode('both');
+                document.getElementById('gdt-actual-x').value = (tedX + t * 0.65).toFixed(2);
+                document.getElementById('gdt-actual-y').value = (tedY - t * 0.55).toFixed(2);
+            }
+            calculateGdt();
+        });
+    });
+}
+
+function setupGdt2DDrag() {
+    const canvas = document.getElementById('gdt-2d-canvas');
+    if (!canvas) return;
+
+    const updateFromPointer = (clientX, clientY) => {
+        const rect = canvas.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const scaleRatio = 800 / (rect.width || 800);
+        const px = (clientX - cx) * scaleRatio;
+        const py = (clientY - cy) * scaleRatio;
+        const dx = px / (gdt2DLastScale || 100);
+        const dy = -py / (gdt2DLastScale || 100);
+        const tedX = parseFloat(document.getElementById('gdt-ted-x').value) || 0;
+        const tedY = parseFloat(document.getElementById('gdt-ted-y').value) || 0;
+        document.getElementById('gdt-actual-x').value = (tedX + dx).toFixed(3);
+        document.getElementById('gdt-actual-y').value = (tedY + dy).toFixed(3);
+        calculateGdt();
+    };
+
+    canvas.addEventListener('pointerdown', (e) => {
+        gdtIsDragging2D = true;
+        canvas.setPointerCapture(e.pointerId);
+        updateFromPointer(e.clientX, e.clientY);
+    });
+    canvas.addEventListener('pointermove', (e) => {
+        if (!gdtIsDragging2D) return;
+        updateFromPointer(e.clientX, e.clientY);
+    });
+    canvas.addEventListener('pointerup', () => { gdtIsDragging2D = false; });
+    canvas.addEventListener('pointercancel', () => { gdtIsDragging2D = false; });
 }
 
 function setupGdtControls() {
@@ -71,127 +143,125 @@ function calculateGdt() {
     const tedY = parseFloat(document.getElementById('gdt-ted-y').value) || 0;
     const actX = parseFloat(document.getElementById('gdt-actual-x').value) || 0;
     const actY = parseFloat(document.getElementById('gdt-actual-y').value) || 0;
-    
-    let baseTol = parseFloat(document.getElementById('gdt-tolerance').value) || 0;
+
+    let baseTol = parseFloat(document.getElementById('gdt-tolerance').value) || 0.5;
     let totalTol = baseTol;
-    
+    let bonus = 0;
+
     const useMmc = document.getElementById('gdt-mmc-toggle')?.checked || false;
     if (useMmc) {
         const lmc = parseFloat(document.getElementById('gdt-lmc-limit').value) || 0;
         const actHole = parseFloat(document.getElementById('gdt-actual-hole').value) || 0;
-        let bonus = actHole - lmc;
-        if (bonus < 0) bonus = 0;
+        bonus = Math.max(0, actHole - lmc);
         totalTol += bonus;
-        
-        document.getElementById('gdt-bonus-val').innerText = '+' + bonus.toFixed(3);
-        document.getElementById('gdt-total-tol-val').innerText = totalTol.toFixed(3);
     }
-    
+    const bEl = document.getElementById('gdt-bonus-val');
+    const tEl = document.getElementById('gdt-total-tol-val');
+    if (bEl) bEl.innerText = '+' + bonus.toFixed(3);
+    if (tEl) tEl.innerText = '⌀' + totalTol.toFixed(3);
+
     const dx = actX - tedX;
     const dy = actY - tedY;
-    const posError = 2 * Math.sqrt(dx*dx + dy*dy);
-    
-    // Evaluate
-    const isPassBox = Math.abs(dx) <= totalTol / 2 && Math.abs(dy) <= totalTol / 2;
+    const posError = 2 * Math.sqrt(dx * dx + dy * dy);
+
+    const mode = gdtDisplayMode;
+    const boxHalfTol = mode === 'inscribed' ? (totalTol / (2 * Math.SQRT2)) : (totalTol / 2);
+    const isPassBox = Math.abs(dx) <= boxHalfTol && Math.abs(dy) <= boxHalfTol;
     const isPassPos = posError <= totalTol;
-    
-    // UI Updates
+
+    // Update top KPI cards
     const errEl = document.getElementById('gdt-stat-error');
     if (errEl) {
         errEl.innerText = posError.toFixed(3);
-        errEl.style.color = isPassPos ? '#10b981' : '#ef4444';
+        errEl.style.color = isPassPos ? 'var(--accent-actual)' : 'var(--accent-danger)';
     }
     const limEl = document.getElementById('gdt-stat-limit');
     if (limEl) limEl.innerText = totalTol.toFixed(3);
-    
-    // ± stat card
+
     const pmEl = document.getElementById('gdt-stat-pm');
     if (pmEl) {
-        pmEl.innerText = `${dx>=0?'+':''}${dx.toFixed(3)} / ${dy>=0?'+':''}${dy.toFixed(3)}`;
-        pmEl.style.color = isPassBox ? '#10b981' : '#ef4444';
+        pmEl.innerText = `${dx >= 0 ? '+' : ''}${dx.toFixed(3)} / ${dy >= 0 ? '+' : ''}${dy.toFixed(3)}`;
+        pmEl.style.color = isPassBox ? 'var(--accent-actual)' : 'var(--accent-danger)';
     }
     const pmLimEl = document.getElementById('gdt-stat-pm-limit');
-    if (pmLimEl) pmLimEl.innerText = (totalTol / 2).toFixed(3);
-    
-    // GD&T Notation box
+    if (pmLimEl) pmLimEl.innerText = boxHalfTol.toFixed(3);
+
+    const verdictEl = document.getElementById('gdt-stat-verdict');
+    const verdictDescEl = document.getElementById('gdt-stat-verdict-desc');
+    const cardStatus = document.getElementById('gdt-card-status');
+    if (verdictEl && verdictDescEl && cardStatus) {
+        if (isPassPos && isPassBox) {
+            verdictEl.innerText = '✓ 合格 (OK)';
+            verdictEl.style.color = 'var(--accent-actual)';
+            verdictDescEl.innerText = '位置度・±公差ともに許容範囲内';
+            cardStatus.style.borderTop = '4px solid var(--accent-actual)';
+        } else if (!isPassBox && isPassPos) {
+            verdictEl.innerText = '✓ 位置度合格 (57%拡大域)';
+            verdictEl.style.color = 'var(--accent-actual)';
+            verdictDescEl.innerText = '内接±公差は超過だが位置度円で救済';
+            cardStatus.style.borderTop = '4px solid var(--accent-actual)';
+        } else if (isPassBox && !isPassPos) {
+            verdictEl.innerText = '⚠️ 位置度NG (角部)';
+            verdictEl.style.color = 'var(--accent-warn)';
+            verdictDescEl.innerText = '±四角内だが円形公差からはみ出し';
+            cardStatus.style.borderTop = '4px solid var(--accent-warn)';
+        } else {
+            verdictEl.innerText = '✗ 不合格 (NG)';
+            verdictEl.style.color = 'var(--accent-danger)';
+            verdictDescEl.innerText = '許容公差領域を超過';
+            cardStatus.style.borderTop = '4px solid var(--accent-danger)';
+        }
+    }
+
+    // JIS/ISO Feature Control Frame HTML
     const notationEl = document.getElementById('gdt-notation-content');
     if (notationEl) {
-        const mode = gdtDisplayMode;
-        let html = '';
-        if (mode === 'pos' || mode === 'both') {
-            html += `<div style="margin-bottom:4px;">
-                <span style="border:1px solid #06b6d4; padding:2px 6px; border-radius:3px; color:#06b6d4;">⌖ ⌀${totalTol.toFixed(3)}</span>
-                <span style="margin-left:8px; color:${isPassPos ? '#10b981' : '#ef4444'};">${isPassPos ? '✓ OK' : '✗ NG'}</span>
-            </div>`;
-        }
-        if (mode === 'box' || mode === 'both') {
-            html += `<div>
-                <span style="color:#ef4444;">X: ${tedX.toFixed(2)} ±${(totalTol/2).toFixed(3)}</span>
-                <span style="margin-left:8px; color:${Math.abs(dx) <= totalTol/2 ? '#10b981' : '#ef4444'};">${Math.abs(dx) <= totalTol/2 ? '✓' : '✗'}</span>
+        const mmcSymbol = useMmc ? ' <span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border:1.5px solid currentColor;border-radius:50%;font-size:0.7rem;">M</span>' : '';
+        notationEl.innerHTML = `
+            <div class="fcf-frame-strip">
+                <span class="fcf-cell">⌖</span>
+                <span class="fcf-cell" style="color:var(--primary-color);">⌀${baseTol.toFixed(2)}${mmcSymbol}</span>
+                <span class="fcf-cell">A</span>
+                <span class="fcf-cell">B</span>
+                <span class="fcf-cell">C</span>
             </div>
-            <div>
-                <span style="color:#ef4444;">Y: ${tedY.toFixed(2)} ±${(totalTol/2).toFixed(3)}</span>
-                <span style="margin-left:8px; color:${Math.abs(dy) <= totalTol/2 ? '#10b981' : '#ef4444'};">${Math.abs(dy) <= totalTol/2 ? '✓' : '✗'}</span>
-            </div>`;
-        }
-        notationEl.innerHTML = html;
-    }
-    
-    const alerts = document.getElementById('gdt-alerts');
-    if (alerts) {
-        alerts.innerHTML = '';
-        if (isPassPos && isPassBox) {
-            alerts.innerHTML = `<div class="warning-text" style="background: rgba(16, 185, 129, 0.1); border-left-color: #10b981;">
-                <i class="fa-solid fa-circle-check" style="color: #10b981;"></i> 
-                <span data-i18n="gdt_warn_perfect">合格 (位置度と±公差ともにクリア)</span>
-            </div>`;
-        } else if (isPassBox && !isPassPos) {
-            alerts.innerHTML = `<div class="warning-text" style="background: rgba(251, 191, 36, 0.1); border-left-color: #fbbf24;">
-                <i class="fa-solid fa-triangle-exclamation" style="color: #fbbf24;"></i> 
-                <span data-i18n="gdt_warn_corner">⚠️ ±公差では四角の領域内ですが、位置度（円外）では不合格です！</span>
-            </div>`;
-        } else {
-            alerts.innerHTML = `<div class="warning-text" style="background: rgba(239, 68, 68, 0.1); border-left-color: #ef4444;">
-                <i class="fa-solid fa-xmark" style="color: #ef4444;"></i> 
-                <span data-i18n="gdt_warn_fail">不合格 (公差範囲外)</span>
-            </div>`;
-        }
-        
-        // Apply translations
-        const lang = document.getElementById('lang-select')?.value || 'ja';
-        applyTranslation(lang);
+            <div style="margin-top:6px; font-size:0.78rem; color:var(--text-muted); font-family:var(--font-mono);">
+                TED: [${tedX.toFixed(2)}, ${tedY.toFixed(2)}] | ±Tol: ±${boxHalfTol.toFixed(3)}
+            </div>
+        `;
     }
 
     renderGdt2D(dx, dy, baseTol, totalTol, isPassPos, isPassBox);
-    updateGdt3DState(dx, dy, totalTol, isPassPos);
+    updateGdt3DState(dx, dy, baseTol, totalTol, isPassPos, isPassBox);
     if (typeof renderGdtDrawing === 'function') {
         renderGdtDrawing(dx, dy, baseTol, totalTol, isPassPos, isPassBox, useMmc);
     }
 }
-// --- Tab System ---
+
 window.switchGdtTab = function(tab) {
     const btn3d = document.getElementById('gdt-tab-btn-3d');
     const btn2d = document.getElementById('gdt-tab-btn-2d');
     const cont3d = document.getElementById('gdt-3d-container');
     const cont2d = document.getElementById('gdt-2d-container');
-    const rotateBtn = document.getElementById('gdt-3d-rotate-btn');
-    
+    const hud = document.getElementById('gdt-3d-hud');
+    const hint = document.getElementById('gdt-tab-hint');
+
     if (!btn3d || !btn2d || !cont3d || !cont2d) return;
-    
+
     btn3d.classList.remove('active');
     btn2d.classList.remove('active');
     cont3d.style.display = 'none';
     cont2d.style.display = 'none';
-    if (rotateBtn) rotateBtn.style.display = 'none';
-    
+    if (hud) hud.style.display = 'none';
+
     if (tab === '3d') {
         btn3d.classList.add('active');
         cont3d.style.display = 'block';
-        if (rotateBtn) rotateBtn.style.display = 'block';
-        
-        if (typeof gdtRenderer !== 'undefined' && gdtRenderer && gdtCamera) {
-            const w = cont3d.clientWidth;
-            const h = cont3d.clientHeight || 440;
+        if (hud) hud.style.display = 'flex';
+        if (hint) hint.innerHTML = '<i class="fa-solid fa-arrows-up-down-left-right"></i> ドラッグで3D回転';
+        if (gdtRenderer && gdtCamera) {
+            const w = cont3d.clientWidth || 600;
+            const h = cont3d.clientHeight || 460;
             gdtCamera.aspect = w / h;
             gdtCamera.updateProjectionMatrix();
             gdtRenderer.setSize(w, h);
@@ -199,9 +269,28 @@ window.switchGdtTab = function(tab) {
     } else {
         btn2d.classList.add('active');
         cont2d.style.display = 'flex';
+        if (hint) hint.innerHTML = '<i class="fa-solid fa-hand-pointer"></i> 測定点を直接ドラッグ可能';
         calculateGdt();
     }
-}
+};
+
+window.setGdtCameraView = function(view) {
+    if (!gdtCamera || !gdtControls) return;
+    gdtAutoRotate = false;
+    gdtControls.autoRotate = false;
+    const icon = document.getElementById('gdt-3d-rotate-icon');
+    if (icon) icon.className = 'fa-solid fa-play';
+
+    const t = gdtControls.target;
+    if (view === 'iso') {
+        gdtCamera.position.set(t.x + 6, t.y + 5, t.z + 6);
+    } else if (view === 'top') {
+        gdtCamera.position.set(t.x, t.y + 11, t.z + 0.01);
+    } else if (view === 'front') {
+        gdtCamera.position.set(t.x, t.y, t.z + 10);
+    }
+    gdtControls.update();
+};
 window.toggleGdt3dRotate = function() {
     gdtAutoRotate = !gdtAutoRotate;
     if (gdtControls) {
@@ -240,193 +329,158 @@ function renderGdt2D(dx, dy, baseTol, totalTol, isPassPos, isPassBox) {
     const w = canvas.width;
     const h = canvas.height;
     const mode = gdtDisplayMode;
-    
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
     const tedX = parseFloat(document.getElementById('gdt-ted-x').value) || 0;
     const tedY = parseFloat(document.getElementById('gdt-ted-y').value) || 0;
     const actX = parseFloat(document.getElementById('gdt-actual-x').value) || 0;
     const actY = parseFloat(document.getElementById('gdt-actual-y').value) || 0;
-    
-    ctx.clearRect(0, 0, w, h);
-    
-    // SCALE: Fixed scale based strictly on the BASE tolerance value
-    // This ensures magnification stays constant even if bonus tolerance increases
-    const viewSize = Math.max(baseTol, 0.1);
-    const scale = Math.min(w, h) * 0.4 / viewSize;
-    
-    ctx.save();
-    
-    // Background
-    ctx.fillStyle = 'rgba(0,0,0,0.03)';
-    ctx.fillRect(0, 0, w, h);
-    
-    // Translate to center of canvas = TED POSITION
-    ctx.translate(w / 2, h / 2);
-    
-    // Calculate pivot point for axes (fixed at bottom-left corner)
-    const axisPx = -w/2 + 20;
-    const axisPy = h/2 - 20;
-    
-    const axisLen = 60;
-    ctx.lineWidth = 2.5;
-    // X Axis (Red)
-    ctx.strokeStyle = '#ff4444';
-    ctx.beginPath();
-    ctx.moveTo(axisPx, axisPy); ctx.lineTo(axisPx + axisLen, axisPy);
-    ctx.stroke();
-    drawArrow2D(ctx, axisPx + axisLen, axisPy, 1, 0);
-    ctx.fillStyle = '#ff4444';
-    ctx.font = 'bold 16px Inter, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('X', axisPx + axisLen + 6, axisPy + 5);
-    
-    // Y Axis (Green) - pointing UP (-Y in canvas)
-    ctx.strokeStyle = '#44ff44';
-    ctx.beginPath();
-    ctx.moveTo(axisPx, axisPy); ctx.lineTo(axisPx, axisPy - axisLen);
-    ctx.stroke();
-    drawArrow2D(ctx, axisPx, axisPy - axisLen, 0, -1);
-    ctx.fillStyle = '#44ff44';
-    ctx.font = 'bold 16px Inter, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Y', axisPx, axisPy - axisLen - 10);
 
-    
-    // =============================================
-    // CENTER AXES (at TED point)
-    // =============================================
-    ctx.strokeStyle = 'rgba(128, 128, 128, 0.3)';
+    ctx.clearRect(0, 0, w, h);
+
+    const viewSize = Math.max(baseTol, 0.1);
+    const scale = Math.min(w, h) * 0.36 / viewSize;
+    gdt2DLastScale = scale;
+
+    ctx.save();
+    ctx.fillStyle = isDark ? '#0f172a' : '#f8fafc';
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.translate(w / 2, h / 2);
+
+    // Subtle Polar Grid Rings
+    ctx.strokeStyle = isDark ? 'rgba(148, 163, 184, 0.12)' : 'rgba(100, 116, 139, 0.14)';
     ctx.lineWidth = 1;
-    ctx.setLineDash([2, 4]);
+    for (let rStep = 0.25; rStep <= 1.25; rStep += 0.25) {
+        ctx.beginPath();
+        ctx.arc(0, 0, (baseTol / 2) * scale * rStep * 2, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
+    // Center Axes through TED
+    ctx.strokeStyle = isDark ? 'rgba(148, 163, 184, 0.28)' : 'rgba(100, 116, 139, 0.3)';
+    ctx.setLineDash([4, 4]);
     ctx.beginPath();
-    ctx.moveTo(-w/2, 0); ctx.lineTo(w/2, 0);
-    ctx.moveTo(0, -h/2); ctx.lineTo(0, h/2);
+    ctx.moveTo(-w / 2, 0); ctx.lineTo(w / 2, 0);
+    ctx.moveTo(0, -h / 2); ctx.lineTo(0, h / 2);
     ctx.stroke();
     ctx.setLineDash([]);
-    
-    // TED crosshair
-    ctx.strokeStyle = 'rgba(100, 200, 255, 0.5)';
-    ctx.beginPath();
-    ctx.moveTo(-15, 0); ctx.lineTo(15, 0);
-    ctx.moveTo(0, -15); ctx.lineTo(0, 15);
-    ctx.stroke();
-    
-    // TED label
-    ctx.fillStyle = 'rgba(100, 200, 255, 0.9)';
-    ctx.font = 'bold 14px "Inter", sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(`TED (${tedX}, ${tedY})`, 12, -12);
-    
-    // =============================================
-    // TOLERANCE ZONES (centered on 0,0 which is TED)
-    // =============================================
+
     // Box Tolerance (±)
-    if (mode === 'both' || mode === 'box') {
-        const boxSide = baseTol * scale;
-        ctx.fillStyle = 'rgba(239, 68, 68, 0.05)';
-        ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
-        ctx.lineWidth = 1.5;
-        ctx.setLineDash([5, 5]);
+    if (mode === 'both' || mode === 'inscribed' || mode === 'box') {
+        const factor = mode === 'inscribed' ? (1 / Math.SQRT2) : 1;
+        const boxSide = baseTol * factor * scale;
+        ctx.fillStyle = 'rgba(225, 29, 72, 0.06)';
+        ctx.strokeStyle = 'rgba(225, 29, 72, 0.75)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
         ctx.beginPath();
-        ctx.rect(-boxSide/2, -boxSide/2, boxSide, boxSide);
+        ctx.rect(-boxSide / 2, -boxSide / 2, boxSide, boxSide);
         ctx.fill();
         ctx.stroke();
         ctx.setLineDash([]);
-        
-        ctx.fillStyle = 'rgba(239, 68, 68, 0.8)';
-        ctx.font = 'bold 14px "Courier New", monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText(`±${(baseTol/2).toFixed(3)}`, 0, -boxSide/2 - 6);
 
-        // Bonus Box (Overall Effective Zone)
-        if (totalTol > baseTol) {
-            const bSide = totalTol * scale;
-            ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
-            ctx.lineWidth = 1;
-            ctx.setLineDash([2, 5]);
-            ctx.strokeRect(-bSide/2, -bSide/2, bSide, bSide);
-            ctx.setLineDash([]);
-            ctx.font = '10px "Courier New"';
-            ctx.fillText(`(Total ±${(totalTol/2).toFixed(3)})`, 0, -bSide/2 - 6);
-        }
+        ctx.fillStyle = '#e11d48';
+        ctx.font = '600 14px "JetBrains Mono", monospace';
+        ctx.textAlign = 'center';
+        const labelVal = (baseTol * factor / 2).toFixed(3);
+        ctx.fillText(mode === 'inscribed' ? `内接 ±${labelVal}` : `±${labelVal}`, 0, -boxSide / 2 - 8);
     }
-    
+
     // Position Tolerance Circle (⌀)
-    if (mode === 'both' || mode === 'pos') {
+    if (mode !== 'box') {
         const radius = (baseTol / 2) * scale;
-        ctx.fillStyle = 'rgba(6, 184, 212, 0.10)';
-        ctx.strokeStyle = 'rgba(6, 184, 212, 0.8)';
-        ctx.lineWidth = 2;
+        ctx.fillStyle = 'rgba(20, 184, 166, 0.10)';
+        ctx.strokeStyle = '#0d9488';
+        ctx.lineWidth = 2.5;
         ctx.beginPath();
         ctx.arc(0, 0, radius, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
-        
-        ctx.fillStyle = 'rgba(6, 184, 212, 0.9)';
-        ctx.font = 'bold 14px "Courier New", monospace';
-        ctx.textAlign = 'left';
-        ctx.fillText(`⌀${baseTol.toFixed(3)}`, radius * 0.7, -radius * 0.7 - 8);
 
-        // Bonus Circle (Overall Effective Zone)
+        ctx.fillStyle = isDark ? '#2dd4bf' : '#0d9488';
+        ctx.font = '700 15px "JetBrains Mono", monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText(`⌀${baseTol.toFixed(3)}`, radius * 0.72, -radius * 0.72 - 8);
+
+        // MMC Bonus Circle
         if (totalTol > baseTol) {
             const bRadius = (totalTol / 2) * scale;
-            ctx.strokeStyle = 'rgba(6, 184, 212, 0.5)';
-            ctx.lineWidth = 1;
-            ctx.setLineDash([5, 5]);
+            ctx.fillStyle = 'rgba(245, 158, 11, 0.08)';
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([6, 4]);
             ctx.beginPath();
             ctx.arc(0, 0, bRadius, 0, Math.PI * 2);
+            ctx.fill();
             ctx.stroke();
             ctx.setLineDash([]);
-            ctx.font = '10px "Courier New"';
-            ctx.fillText(`(Total ⌀${totalTol.toFixed(3)})`, bRadius * 0.7, -bRadius * 0.7 - 8);
+            ctx.fillStyle = '#f59e0b';
+            ctx.font = '600 13px "JetBrains Mono", monospace';
+            ctx.fillText(`Ⓜ 実効 ⌀${totalTol.toFixed(3)}`, bRadius * 0.72, -bRadius * 0.72 - 8);
         }
     }
-    
-    // =============================================
-    // MEASUREMENT POINT
-    // =============================================
+
+    // TED Center Marker
+    ctx.strokeStyle = '#6366f1';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-12, 0); ctx.lineTo(12, 0);
+    ctx.moveTo(0, -12); ctx.lineTo(0, 12);
+    ctx.stroke();
+    ctx.fillStyle = isDark ? '#818cf8' : '#4f46e5';
+    ctx.font = '600 13px "Inter", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`TED (${tedX.toFixed(2)}, ${tedY.toFixed(2)})`, 10, 20);
+
+    // Measured Point & Vector
     const px = dx * scale;
-    const py = -dy * scale; // Invert Y for canvas
-    
-    // Dimension lines
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-    ctx.setLineDash([2, 4]);
+    const py = -dy * scale;
+
+    // Radial vector from TED to Measured Point
+    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(15,23,42,0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(px, py);
+    ctx.stroke();
+
+    // ΔX / ΔY projection lines
+    ctx.strokeStyle = isDark ? 'rgba(148, 163, 184, 0.4)' : 'rgba(100, 116, 139, 0.45)';
+    ctx.setLineDash([3, 3]);
     ctx.beginPath();
     ctx.moveTo(px, 0); ctx.lineTo(px, py);
     ctx.moveTo(0, py); ctx.lineTo(px, py);
     ctx.stroke();
     ctx.setLineDash([]);
-    
-    // ΔX / ΔY labels
-    ctx.fillStyle = '#8b99ae';
-    ctx.font = 'bold 14px "Courier New", monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(`ΔX=${dx.toFixed(3)}`, px/2, py + (py > 0 ? 12 : -5));
-    ctx.save();
-    ctx.translate(px + (px > 0 ? 12 : -12), py/2);
-    ctx.rotate(-Math.PI/2);
-    ctx.fillText(`ΔY=${dy.toFixed(3)}`, 0, 0);
-    ctx.restore();
-    
-    // Measured point dot
-    let dotColor = isPassPos ? '#10b981' : '#ef4444';
-    if (isPassBox && !isPassPos) dotColor = '#fbbf24';
-    
-    ctx.shadowColor = dotColor;
-    ctx.shadowBlur = 10;
+
+    // Measured point dot (draggable target)
+    let dotColor = isPassPos ? '#14b8a6' : '#e11d48';
+    if (isPassBox && !isPassPos) dotColor = '#f59e0b';
+
+    // Outer halo for drag affordance
+    ctx.fillStyle = dotColor + '33';
+    ctx.beginPath();
+    ctx.arc(px, py, 16, 0, Math.PI * 2);
+    ctx.fill();
+
     ctx.fillStyle = dotColor;
     ctx.beginPath();
-    ctx.arc(px, py, 6, 0, Math.PI * 2);
+    ctx.arc(px, py, 8, 0, Math.PI * 2);
     ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2.5;
     ctx.stroke();
-    
-    ctx.fillStyle = '#fff';
-    ctx.font = '9px "Courier New", monospace';
+
+    // Coordinate pill label
+    ctx.fillStyle = isDark ? '#f8fafc' : '#0f172a';
+    ctx.font = '700 13px "JetBrains Mono", monospace';
     ctx.textAlign = 'left';
-    ctx.fillText(`(${actX.toFixed(2)}, ${actY.toFixed(2)})`, px + 10, py - 8);
-    
+    ctx.fillText(`(${actX.toFixed(2)}, ${actY.toFixed(2)})`, px + 14, py - 10);
+    ctx.font = '500 12px "JetBrains Mono", monospace';
+    ctx.fillStyle = isDark ? '#94a3b8' : '#475569';
+    ctx.fillText(`ΔX:${dx >= 0 ? '+' : ''}${dx.toFixed(3)} ΔY:${dy >= 0 ? '+' : ''}${dy.toFixed(3)}`, px + 14, py + 8);
+
     ctx.restore();
 }
 
@@ -749,10 +803,39 @@ function initGdtScene() {
 
     
     // Group for dynamic meshes
+    gdtPartGroup = new THREE.Group();
+    const plateGeo = new THREE.BoxGeometry(6.5, GDT_HEIGHT, 6.5);
+    const plateMat = new THREE.MeshStandardMaterial({
+        color: 0x64748b,
+        transparent: true,
+        opacity: 0.08,
+        roughness: 0.4,
+        metalness: 0.2,
+        depthWrite: false
+    });
+    const plateMesh = new THREE.Mesh(plateGeo, plateMat);
+    const plateEdges = new THREE.LineSegments(
+        new THREE.EdgesGeometry(plateGeo),
+        new THREE.LineBasicMaterial({ color: 0x64748b, transparent: true, opacity: 0.28 })
+    );
+    plateMesh.add(plateEdges);
+    gdtPartGroup.add(plateMesh);
+    gdtPartGroup.position.y = GDT_HEIGHT / 2;
+    gdtScene.add(gdtPartGroup);
+
     const materialEnv = new THREE.MeshStandardMaterial({
         color: 0x06b6d4,
         transparent: true,
-        opacity: 0.25,
+        opacity: 0.28,
+        roughness: 0.25,
+        metalness: 0.1,
+        side: THREE.DoubleSide,
+        depthWrite: false
+    });
+    const materialBonus = new THREE.MeshStandardMaterial({
+        color: 0xf59e0b,
+        transparent: true,
+        opacity: 0.20,
         roughness: 0.3,
         metalness: 0.1,
         side: THREE.DoubleSide,
@@ -761,36 +844,56 @@ function initGdtScene() {
     const materialBox = new THREE.MeshStandardMaterial({
         color: 0xef4444,
         transparent: true,
-        opacity: 0.12,
+        opacity: 0.14,
         wireframe: false,
-        side: THREE.DoubleSide
+        side: THREE.DoubleSide,
+        depthWrite: false
     });
     
     // Setup placeholder meshes (geometries will be regenerated on update)
-    gdtCylinder = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, GDT_HEIGHT, 32), materialEnv);
+    gdtCylinder = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, GDT_HEIGHT, 48), materialEnv);
+    gdtBonusCylinder = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, GDT_HEIGHT, 48), materialBonus);
+    gdtBonusCylinder.visible = false;
+
     gdtBox = new THREE.Mesh(new THREE.BoxGeometry(2, GDT_HEIGHT, 2), materialBox);
     const edgeGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(2, GDT_HEIGHT, 2));
-    const edgeMat = new THREE.LineBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.4 });
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.45 });
     gdtBox.add(new THREE.LineSegments(edgeGeo, edgeMat));
     
     // Start slightly above grid so it visually sits on the datum
     gdtCylinder.position.y = GDT_HEIGHT / 2;
+    gdtBonusCylinder.position.y = GDT_HEIGHT / 2;
     gdtBox.position.y = GDT_HEIGHT / 2;
     
     gdtScene.add(gdtCylinder);
+    gdtScene.add(gdtBonusCylinder);
     gdtScene.add(gdtBox);
     
-    // Measured Line Axis
-    const lineMat = new THREE.LineBasicMaterial({ color: 0x10b981, linewidth: 3 });
-    const points = [new THREE.Vector3(0,0,0), new THREE.Vector3(0, GDT_HEIGHT, 0)];
-    gdtMeasLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), lineMat);
-    gdtScene.add(gdtMeasLine);
+    // Measured 3D Cylindrical Pin Axis (replaces 1px WebGL line)
+    const pinGeo = new THREE.CylinderGeometry(0.06, 0.06, GDT_HEIGHT + 0.6, 20);
+    const pinMat = new THREE.MeshStandardMaterial({
+        color: 0x10b981,
+        roughness: 0.2,
+        metalness: 0.3,
+        emissive: 0x10b981,
+        emissiveIntensity: 0.25
+    });
+    gdtMeasPin = new THREE.Mesh(pinGeo, pinMat);
+    gdtMeasPin.position.y = GDT_HEIGHT / 2;
+    gdtScene.add(gdtMeasPin);
     
-    // Measured Point Dot on Datum
-    const dotGeo = new THREE.SphereGeometry(0.15, 16, 16);
+    // Measured Point Sphere + Status Ring on Datum Plane
+    const dotGeo = new THREE.SphereGeometry(0.16, 20, 20);
     const dotMat = new THREE.MeshBasicMaterial({ color: 0x10b981 });
     gdtMeasDot = new THREE.Mesh(dotGeo, dotMat);
     gdtScene.add(gdtMeasDot);
+
+    const ringGeo = new THREE.RingGeometry(0.24, 0.32, 32);
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0x10b981, side: THREE.DoubleSide, transparent: true, opacity: 0.7 });
+    gdtStatusRing = new THREE.Mesh(ringGeo, ringMat);
+    gdtStatusRing.rotation.x = -Math.PI / 2;
+    gdtStatusRing.position.y = 0.02;
+    gdtScene.add(gdtStatusRing);
     
     // Animation loop
     function animate() {
@@ -854,7 +957,7 @@ function initGdtScene() {
     }, 100);
 }
 
-function updateGdt3DState(dx, dy, tol, isPassPos) {
+function updateGdt3DState(dx, dy, baseTol, totalTol, isPassPos, isPassBox) {
     if (!gdtScene || !gdtCylinder) return;
     
     const tedX = parseFloat(document.getElementById('gdt-ted-x').value) || 0;
@@ -863,22 +966,33 @@ function updateGdt3DState(dx, dy, tol, isPassPos) {
     const actY = parseFloat(document.getElementById('gdt-actual-y').value) || 0;
     
     const mode = gdtDisplayMode;
-    // Scale: dynamically scale so the tolerance zone is always roughly the same size in 3D!
-    const S = 2.0 / Math.max(tol, 0.05); 
-    const radius = Math.max((tol / 2) * S, 0.1);
-    const boxSide = Math.max(tol * S, 0.2);
+    // Scale: dynamically scale so the tolerance zone is always roughly the same size in 3D
+    const S = 2.0 / Math.max(totalTol, 0.05); 
+    const baseRadius = Math.max((baseTol / 2) * S, 0.08);
+    const totalRadius = Math.max((totalTol / 2) * S, 0.1);
+    const boxSide = mode === 'inscribed'
+        ? Math.max((totalTol / Math.SQRT2) * S, 0.15)
+        : Math.max(totalTol * S, 0.2);
     
     // TED position in 3D: X stays, Y(3D) is height, Z = -tedY (2D Y maps to negative 3D Z)
     const tedPx = tedX * S;
     const tedPz = -tedY * S;
     
     // Show/hide based on mode
-    gdtCylinder.visible = (mode === 'both' || mode === 'pos');
-    gdtBox.visible = (mode === 'both' || mode === 'box');
+    gdtCylinder.visible = (mode === 'both' || mode === 'pos' || mode === 'inscribed');
+    gdtBox.visible = (mode === 'both' || mode === 'box' || mode === 'inscribed');
+    if (gdtBonusCylinder) {
+        gdtBonusCylinder.visible = gdtCylinder.visible && (totalTol > baseTol + 1e-5);
+        if (gdtBonusCylinder.visible) {
+            gdtBonusCylinder.geometry.dispose();
+            gdtBonusCylinder.geometry = new THREE.CylinderGeometry(totalRadius, totalRadius, GDT_HEIGHT, 48);
+            gdtBonusCylinder.position.set(tedPx, GDT_HEIGHT / 2, tedPz);
+        }
+    }
     
-    // Rebuild Cylinder at TED position
+    // Rebuild Base Cylinder at TED position
     gdtCylinder.geometry.dispose();
-    gdtCylinder.geometry = new THREE.CylinderGeometry(radius, radius, GDT_HEIGHT, 32);
+    gdtCylinder.geometry = new THREE.CylinderGeometry(baseRadius, baseRadius, GDT_HEIGHT, 48);
     gdtCylinder.position.set(tedPx, GDT_HEIGHT / 2, tedPz);
     
     // Rebuild Box at TED position
@@ -888,29 +1002,42 @@ function updateGdt3DState(dx, dy, tol, isPassPos) {
     gdtBox.geometry = newBoxGeo;
     gdtBox.children[0].geometry = new THREE.EdgesGeometry(newBoxGeo);
     gdtBox.position.set(tedPx, GDT_HEIGHT / 2, tedPz);
+
+    if (gdtPartGroup) {
+        gdtPartGroup.position.set(tedPx, GDT_HEIGHT / 2, tedPz);
+    }
     
     // Actual measurement in absolute position
     const actPx = actX * S;
     const actPz = -actY * S;
     
-    const pts = [new THREE.Vector3(actPx, 0, actPz), new THREE.Vector3(actPx, GDT_HEIGHT, actPz)];
-    gdtMeasLine.geometry.setFromPoints(pts);
-    gdtMeasDot.position.set(actPx, 0, actPz);
+    if (gdtMeasPin) {
+        gdtMeasPin.position.set(actPx, GDT_HEIGHT / 2, actPz);
+    }
+    if (gdtMeasDot) {
+        gdtMeasDot.position.set(actPx, 0.05, actPz);
+    }
+    if (gdtStatusRing) {
+        gdtStatusRing.position.set(actPx, 0.02, actPz);
+    }
     
     // Update Color based on current mode's pass status
-    const isPassBox = Math.abs(dx) <= tol / 2 && Math.abs(dy) <= tol / 2;
     let colorHex;
     if (mode === 'pos') {
         colorHex = isPassPos ? 0x10b981 : 0xef4444;
     } else if (mode === 'box') {
         colorHex = isPassBox ? 0x10b981 : 0xef4444;
+    } else if (mode === 'inscribed') {
+        colorHex = (isPassPos && isPassBox) ? 0x10b981 : (isPassPos && !isPassBox) ? 0x06b6d4 : 0xef4444;
     } else {
         colorHex = (isPassPos && isPassBox) ? 0x10b981 : (isPassBox && !isPassPos) ? 0xfbbf24 : 0xef4444;
     }
-    gdtMeasLine.material.color.setHex(colorHex);
-    gdtMeasDot.material.color.setHex(colorHex);
-    
-    // Smart axes placement logic removed: replaced by HUD compass
+    if (gdtMeasPin) {
+        gdtMeasPin.material.color.setHex(colorHex);
+        gdtMeasPin.material.emissive.setHex(colorHex);
+    }
+    if (gdtMeasDot) gdtMeasDot.material.color.setHex(colorHex);
+    if (gdtStatusRing) gdtStatusRing.material.color.setHex(colorHex);
     
     // Center the grid on the hole position
     if (gdtGridHelper) {

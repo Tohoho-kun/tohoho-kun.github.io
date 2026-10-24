@@ -7,7 +7,9 @@
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233b82f6'><path d='M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'/></svg>">
     <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js -->
@@ -185,130 +187,184 @@
 
     <template id="view-cpk">
         <div class="container x-large fade-in">
-            <div class="page-header flex-header" style="flex-direction: column; align-items: flex-start;">
+            <div class="page-header flex-header">
                 <div>
                     <button class="back-link" onclick="window.location.hash='#home'"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="back_home">ホームへ戻る</span></button>
-                    <h1 data-i18n="cpk_title">プロセス・キャパビリティ シミュレーター</h1>
+                    <div class="title-with-badge">
+                        <h1 data-i18n="cpk_title">プロセス・キャパビリティ (Cpk) シミュレーター</h1>
+                        <span class="edu-badge"><i class="fa-solid fa-graduation-cap"></i> <span data-i18n="edu_notice">技術教育・工程能力シミュレーター</span></span>
+                    </div>
                 </div>
-                <p class="warning-text" data-i18n="warning_text">教育目的以外の使用は禁止します。企業でも教育目的であれば可です。生成したシミュレーションデータの悪用はしないでください</p>
             </div>
 
-            <div class="layout-grid">
-                <!-- Left Sidebar 1: Controls -->
+            <div class="layout-grid cpk-layout">
+                <!-- Left Sidebar: Controls -->
                 <aside class="control-panel panel">
-                    <h2><i class="fa-solid fa-sliders"></i> Control Panel</h2>
-                    
+                    <!-- Presets -->
                     <div class="control-group">
-                        <label for="input-usl" data-i18n="usl_label">規格上限 (USL)</label>
-                        <input type="number" id="input-usl" value="1" step="0.01">
+                        <label class="group-label"><i class="fa-solid fa-wand-magic-sparkles"></i> <span data-i18n="cpk_preset_label">学習プリセット</span></label>
+                        <div class="preset-btn-grid">
+                            <button type="button" class="btn small preset-btn" data-cpk-preset="capable">
+                                <strong>安定工程</strong>
+                                <small>Cpk 1.33</small>
+                            </button>
+                            <button type="button" class="btn small preset-btn" data-cpk-preset="shifted">
+                                <strong>中心ズレ</strong>
+                                <small>Cpk 0.83</small>
+                            </button>
+                            <button type="button" class="btn small preset-btn" data-cpk-preset="variation">
+                                <strong>ばらつき過大</strong>
+                                <small>Cp 0.75</small>
+                            </button>
+                            <button type="button" class="btn small preset-btn" data-cpk-preset="coarse">
+                                <strong>粗い分解能</strong>
+                                <small>量子化影響</small>
+                            </button>
+                        </div>
                     </div>
+
+                    <hr>
+
+                    <h2><i class="fa-solid fa-sliders"></i> <span data-i18n="cpk_spec_settings">規格 ＆ 理論分布</span></h2>
                     
-                    <div class="control-group">
-                        <label for="input-lsl" data-i18n="lsl_label">規格下限 (LSL)</label>
-                        <input type="number" id="input-lsl" value="-1" step="0.01">
+                    <div class="control-group-grid2">
+                        <div class="control-group">
+                            <label for="input-usl" data-i18n="usl_label">規格上限 (USL)</label>
+                            <input type="number" id="input-usl" value="1.00" step="0.01">
+                        </div>
+                        <div class="control-group">
+                            <label for="input-lsl" data-i18n="lsl_label">規格下限 (LSL)</label>
+                            <input type="number" id="input-lsl" value="-1.00" step="0.01">
+                        </div>
                     </div>
 
                     <div class="control-group">
                         <div class="slider-header">
                             <label for="input-mean" data-i18n="mean_label">理論平均 (μ)</label>
-                            <input type="number" id="val-mean" class="input-sync" value="0.0" step="0.01">
+                            <input type="number" id="val-mean" class="input-sync" value="0.000" step="0.01">
                         </div>
-                        <input type="range" id="input-mean" min="-5" max="5" value="0.0" step="0.001">
+                        <input type="range" id="input-mean" min="-3" max="3" value="0.0" step="0.001">
                     </div>
 
                     <div class="control-group">
                         <div class="slider-header">
                             <label for="input-std" data-i18n="std_label">理論標準偏差 (σ)</label>
-                            <input type="number" id="val-std" class="input-sync" value="0.33" step="0.01" min="0.001">
+                            <input type="number" id="val-std" class="input-sync" value="0.250" step="0.01" min="0.001">
                         </div>
-                        <input type="range" id="input-std" min="0.001" max="5" value="0.33" step="0.001">
+                        <input type="range" id="input-std" min="0.01" max="2" value="0.250" step="0.001">
                     </div>
 
                     <hr>
                     
-                    <h3><i class="fa-solid fa-database"></i> <span data-i18n="gen_settings">生成設定</span></h3>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-bottom: 10px;">
+                    <h3><i class="fa-solid fa-dice"></i> <span data-i18n="gen_settings">シミュレーション生成</span></h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 10px;">
                         <div class="control-group" style="margin-bottom:0;">
-                            <label for="input-n" style="font-size:0.75rem;" data-i18n="gen_n">N数(&le;50)</label>
-                            <input type="number" id="input-n" value="30" min="1" max="50" style="padding:0.2rem;">
+                            <label for="input-n" style="font-size:0.75rem;" data-i18n="gen_n">N数 (≤50)</label>
+                            <input type="number" id="input-n" value="30" min="5" max="50">
                         </div>
                         <div class="control-group" style="margin-bottom:0;">
                             <label for="input-digits" style="font-size:0.75rem;" data-i18n="gen_decimals">小数桁数</label>
-                            <input type="number" id="input-digits" value="2" min="0" max="6" style="padding:0.2rem;">
+                            <input type="number" id="input-digits" value="2" min="0" max="6">
                         </div>
                         <div class="control-group" style="margin-bottom:0;">
                             <label for="input-step" style="font-size:0.75rem;" data-i18n="gen_step">丸め刻み</label>
-                            <input type="number" id="input-step" value="0.01" step="0.01" min="0" style="padding:0.2rem;">
+                            <input type="number" id="input-step" value="0.01" step="0.001" min="0">
                         </div>
                     </div>
                     <button id="btn-generate" class="btn primary full-width"><i class="fa-solid fa-bolt"></i> <span data-i18n="btn_gen">ランダム生成</span></button>
-                    <button id="btn-recalc" class="btn secondary full-width mt-2"><i class="fa-solid fa-calculator"></i> <span data-i18n="btn_recalc">特性値再計算</span></button>
-                    
-                    <hr>
-                    <button id="btn-apply-actual" class="btn secondary full-width"><i class="fa-solid fa-upload"></i> <span data-i18n="btn_apply">実力値をスライダーに反映</span></button>
+                    <button id="btn-apply-actual" class="btn secondary full-width mt-2"><i class="fa-solid fa-arrows-to-dot"></i> <span data-i18n="btn_apply">実力値をスライダーに反映</span></button>
+                    <button id="btn-toggle-data-drawer" class="btn secondary full-width mt-2"><i class="fa-solid fa-table"></i> <span data-i18n="btn_open_data">実測データ表を開く</span> (<span id="cpk-data-count">30</span>)</button>
                 </aside>
-
-                <!-- Left Sidebar 2: Data Table -->
-                <div class="data-panel panel compact">
-                    <div class="flex-header compact-header">
-                        <h2><i class="fa-solid fa-table"></i> <span data-i18n="data_label">データ</span></h2>
-                        <div>
-                            <button id="btn-copy" class="icon-btn small-icon" title="Excelコピー"><i class="fa-regular fa-copy"></i></button>
-                            <button id="btn-clear" class="icon-btn small-icon" title="クリア"><i class="fa-solid fa-eraser"></i></button>
-                        </div>
-                    </div>
-                    <div class="table-container tight">
-                        <table class="data-table excel-style" id="data-table">
-                            <thead>
-                                <tr>
-                                    <th>No.</th>
-                                    <th data-i18n="data_val_label">値 (Value)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- Rows will be injected by app.js -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
 
                 <!-- Right: Visualization & Data -->
                 <div class="main-content">
                     
-                    <!-- Stats area -->
-                    <div class="stats-grid">
+                    <!-- Verdict & Stats area -->
+                    <div id="cpk-verdict-banner" class="verdict-banner capable">
+                        <div class="verdict-icon"><i class="fa-solid fa-circle-check"></i></div>
+                        <div class="verdict-body">
+                            <div class="verdict-title" id="cpk-verdict-title">工程能力は十分です (Cpk ≥ 1.33)</div>
+                            <div class="verdict-desc" id="cpk-verdict-desc">理論上の不良率は極めて低く、安定した量産が可能な水準です。</div>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid cpk-stats-grid">
                         <div class="stat-card theoretical">
                             <div class="stat-title" data-i18n="theo_cpk">理論 Cpk</div>
                             <div class="stat-value" id="stat-theory-cpk">--</div>
-                            <div class="stat-sub">Cp: <span id="stat-theory-cp">--</span></div>
+                            <div class="stat-sub">Cp: <span id="stat-theory-cp">--</span> | 不良率: <span id="stat-theory-ppm">--</span> ppm</div>
                         </div>
                         <div class="stat-card actual">
                             <div class="stat-title" data-i18n="act_cpk">実力 Cpk</div>
                             <div class="stat-value" id="stat-actual-cpk">--</div>
-                            <div class="stat-sub">Cp: <span id="stat-actual-cp">--</span></div>
+                            <div class="stat-sub">Cp: <span id="stat-actual-cp">--</span> | 不良率: <span id="stat-actual-ppm">--</span> ppm</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-title" data-i18n="act_mean">実力平均 (x̄)</div>
                             <div class="stat-value" id="stat-actual-mean">--</div>
+                            <div class="stat-sub">偏り (k): <span id="stat-actual-shift">--</span></div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-title" data-i18n="act_std">実力標準偏差 (s)</div>
                             <div class="stat-value" id="stat-actual-std">--</div>
+                            <div class="stat-sub">6s 幅: <span id="stat-actual-6s">--</span></div>
                         </div>
                     </div>
 
-                    <!-- Chart -->
-                    <div class="chart-container panel">
-                        <div class="chart-controls">
-                            <label for="plot-type-select"><i class="fa-solid fa-chart-pie"></i> <span data-i18n="plot_type">実績値の表示:</span></label>
-                            <select id="plot-type-select" class="custom-select">
-                                <option value="scatter" data-i18n="plot_scatter">散布図 (Scatter)</option>
-                                <option value="line" data-i18n="plot_curve">曲線 (Curve)</option>
-                                <option value="histogram" data-i18n="plot_hist">ヒストグラム (Histogram)</option>
-                            </select>
+                    <!-- Chart Panel -->
+                    <div class="chart-container panel cpk-chart-panel">
+                        <div class="chart-controls flex-between">
+                            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                                <div class="chart-control-item">
+                                    <label for="plot-type-select"><i class="fa-solid fa-chart-line"></i> <span data-i18n="plot_type">実績プロット:</span></label>
+                                    <select id="plot-type-select" class="custom-select">
+                                        <option value="scatter" data-i18n="plot_scatter">散布図 (Beeswarm)</option>
+                                        <option value="line" data-i18n="plot_curve">正規曲線 (Curve)</option>
+                                        <option value="histogram" data-i18n="plot_hist">ヒストグラム (Histogram)</option>
+                                    </select>
+                                </div>
+                                <label class="checkbox-label" style="font-size:0.85rem; cursor:pointer;">
+                                    <input type="checkbox" id="cpk-show-shading" checked>
+                                    <span data-i18n="cpk_show_shading">規格外テール強調</span>
+                                </label>
+                                <label class="checkbox-label" style="font-size:0.85rem; cursor:pointer;">
+                                    <input type="checkbox" id="cpk-show-target" checked>
+                                    <span data-i18n="cpk_show_target">規格中心 ＆ 偏り矢印</span>
+                                </label>
+                            </div>
                         </div>
-                        <canvas id="cpk-chart"></canvas>
+                        <div class="cpk-canvas-wrapper" style="position:relative; width:100%; height:340px;">
+                            <canvas id="cpk-chart"></canvas>
+                        </div>
                     </div>
+
+                    <!-- Collapsible Data Drawer -->
+                    <div id="cpk-data-drawer" class="panel mt-3 cpk-data-drawer" style="display:none;">
+                        <div class="flex-header compact-header" style="margin-bottom:10px;">
+                            <h3><i class="fa-solid fa-table"></i> <span data-i18n="data_label">実測データ一覧 (N=50)</span></h3>
+                            <div class="table-actions" style="display:flex; gap:6px;">
+                                <button id="btn-paste-data" class="btn small secondary" title="Excelから列データを貼り付け"><i class="fa-solid fa-paste"></i> <span data-i18n="btn_paste">Excel貼付</span></button>
+                                <button id="btn-copy" class="btn small secondary" title="Excelコピー"><i class="fa-regular fa-copy"></i> <span data-i18n="btn_copy">コピー</span></button>
+                                <button id="btn-clear" class="btn small secondary" title="クリア"><i class="fa-solid fa-eraser"></i> <span data-i18n="btn_clear">クリア</span></button>
+                                <button id="btn-close-data-drawer" class="icon-btn small-icon" title="閉じる"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                        </div>
+                        <div class="table-container tight" style="max-height:220px; overflow-y:auto;">
+                            <table class="data-table excel-style" id="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>No.</th>
+                                        <th data-i18n="data_val_label">測定値 (Value)</th>
+                                        <th>判定</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Rows injected by cpk.js -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -318,35 +374,63 @@
             <div class="page-header flex-header">
                 <div>
                     <button class="back-link" onclick="window.location.hash='#home'"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="back_home">ホームへ戻る</span></button>
-                    <h1 data-i18n="grr_title">ゲージR&R アナライザー (MSA)</h1>
+                    <div class="title-with-badge">
+                        <h1 data-i18n="grr_title">ゲージR&R アナライザー (MSA)</h1>
+                        <span class="edu-badge"><i class="fa-solid fa-graduation-cap"></i> <span data-i18n="edu_notice">測定システム解析・ANOVA法</span></span>
+                    </div>
                 </div>
-                <p class="warning-text" data-i18n="warning_text">教育目的以外の使用は禁止します。</p>
             </div>
 
             <div class="layout-grid grr-layout">
                 <!-- Left: Controls -->
                 <aside class="control-panel panel">
-                    <h2><i class="fa-solid fa-sliders"></i> <span data-i18n="settings">設定</span></h2>
-                    
+                    <!-- Presets -->
                     <div class="control-group">
-                        <label for="grr-usl" data-i18n="usl_label">規格上限 (USL)</label>
-                        <input type="number" id="grr-usl" value="10.10" step="0.01">
-                    </div>
-                    <div class="control-group">
-                        <label for="grr-lsl" data-i18n="lsl_label">規格下限 (LSL)</label>
-                        <input type="number" id="grr-lsl" value="9.90" step="0.01">
+                        <label class="group-label"><i class="fa-solid fa-wand-magic-sparkles"></i> <span data-i18n="grr_presets_title">学習プリセット</span></label>
+                        <div class="preset-btn-grid">
+                            <button type="button" class="btn small preset-btn" data-grr-preset="ideal">
+                                <strong>理想的</strong>
+                                <small>%GRR &lt; 10%</small>
+                            </button>
+                            <button type="button" class="btn small preset-btn" data-grr-preset="operator_bias">
+                                <strong>作業者差大</strong>
+                                <small>再現性不良</small>
+                            </button>
+                            <button type="button" class="btn small preset-btn" data-grr-preset="gauge_error">
+                                <strong>ゲージ誤差大</strong>
+                                <small>繰返し性不良</small>
+                            </button>
+                            <button type="button" class="btn small preset-btn" data-grr-preset="coarse_res">
+                                <strong>分解能粗い</strong>
+                                <small>量子化ボトルネック</small>
+                            </button>
+                        </div>
                     </div>
 
                     <hr>
+
+                    <h2><i class="fa-solid fa-sliders"></i> <span data-i18n="settings">公差 ＆ 測定器仕様</span></h2>
                     
-                    <h3><i class="fa-solid fa-microscope"></i> <span data-i18n="inst_settings">測定器仕様</span></h3>
-                    <div class="control-group">
-                        <label for="grr-digits" data-i18n="gen_decimals">小数桁数</label>
-                        <input type="number" id="grr-digits" value="2" min="0" max="6">
+                    <div class="control-group-grid2">
+                        <div class="control-group">
+                            <label for="grr-usl" data-i18n="usl_label">規格上限 (USL)</label>
+                            <input type="number" id="grr-usl" value="10.10" step="0.01">
+                        </div>
+                        <div class="control-group">
+                            <label for="grr-lsl" data-i18n="lsl_label">規格下限 (LSL)</label>
+                            <input type="number" id="grr-lsl" value="9.90" step="0.01">
+                        </div>
                     </div>
-                    <div class="control-group">
-                        <label for="grr-step" data-i18n="round_unit">丸め単位 (Resolution)</label>
-                        <input type="number" id="grr-step" value="0.01" step="0.001" min="0.0001">
+
+                    <div class="control-group-grid2">
+                        <div class="control-group">
+                            <label for="grr-digits" data-i18n="gen_decimals">小数桁数</label>
+                            <input type="number" id="grr-digits" value="2" min="0" max="6">
+                        </div>
+                        <div class="control-group">
+                            <label for="grr-step" data-i18n="round_unit">丸め単位 (Resolution)</label>
+                            <input type="number" id="grr-step" value="0.01" step="0.001" min="0.0001">
+                        </div>
                     </div>
 
                     <hr>
@@ -356,39 +440,100 @@
                         <label for="sim-part-mean" data-i18n="mean_label">理論平均 (μ)</label>
                         <input type="number" id="sim-part-mean" value="10.00" step="0.01">
                     </div>
-                    <div class="control-group">
-                        <label for="sim-part-std" data-i18n="part_var_label">サンプルのばらつき (σ_part)</label>
-                        <input type="number" id="sim-part-std" value="0.03" step="0.001">
-                    </div>
-                    <div class="control-group">
-                        <label for="sim-error-std" data-i18n="error_var_label">測定誤差 (σ_error)</label>
-                        <input type="number" id="sim-error-std" value="0.005" step="0.001">
+                    <div class="control-group-grid2">
+                        <div class="control-group">
+                            <label for="sim-part-std" data-i18n="part_var_label">サンプル散らばり (σ_part)</label>
+                            <input type="number" id="sim-part-std" value="0.03" step="0.001">
+                        </div>
+                        <div class="control-group">
+                            <label for="sim-error-std" data-i18n="error_var_label">測定誤差 (σ_error)</label>
+                            <input type="number" id="sim-error-std" value="0.005" step="0.001">
+                        </div>
                     </div>
                     <div class="control-group flex-between">
-                        <label for="sim-out-of-spec" data-i18n="out_of_spec_label">公差外データを生成</label>
+                        <label for="sim-out-of-spec" data-i18n="out_of_spec_label">公差外サンプルを混ぜる</label>
                         <input type="checkbox" id="sim-out-of-spec" class="ios-switch" checked>
                     </div>
 
-                    <button id="btn-grr-generate" class="btn primary full-width"><i class="fa-solid fa-bolt"></i> <span data-i18n="btn_gen">データ生成</span></button>
-                    <button id="btn-grr-calc" class="btn secondary full-width mt-2"><i class="fa-solid fa-calculator"></i> <span data-i18n="btn_recalc">計算実行</span></button>
-                    <button id="btn-grr-improve" class="btn secondary full-width mt-2"><i class="fa-solid fa-wand-magic-sparkles"></i> <span data-i18n="btn_improve">改善案を表示</span></button>
+                    <button id="btn-grr-generate" class="btn primary full-width mt-2"><i class="fa-solid fa-bolt"></i> <span data-i18n="btn_gen">データ生成 ＆ 解析</span></button>
+                    
+                    <hr>
+
+                    <!-- Live What-if Improvement Comparison -->
+                    <h3><i class="fa-solid fa-lightbulb"></i> <span data-i18n="imp_prop_title">改善案シミュレーション</span></h3>
+                    <div class="grr-whatif-card">
+                        <div class="whatif-row">
+                            <span class="whatif-title" data-i18n="imp_opt_a">案A: 分解能1/10向上</span>
+                            <div class="whatif-pred">%GR&R <strong id="pred-grr-a">--</strong>%</div>
+                        </div>
+                        <div class="whatif-row">
+                            <span class="whatif-title" data-i18n="imp_opt_b">案B: 測定誤差半減</span>
+                            <div class="whatif-pred">%GR&R <strong id="pred-grr-b">--</strong>%</div>
+                        </div>
+                    </div>
                 </aside>
 
                 <!-- Right: Data & Analysis -->
                 <div class="main-content grr-main">
                     
-                    <div class="grr-center-col">
-                        <!-- Center: Data Table -->
-                    <div class="data-panel panel compact">
-                        <div class="flex-header compact-header">
-                            <h2><i class="fa-solid fa-table"></i> <span data-i18n="data_label">データ入力 (10x3x3)</span></h2>
-                            <div class="table-actions">
-                                <button id="btn-grr-copy" class="icon-btn small-icon" title="Excelコピー (標準)"><i class="fa-regular fa-copy"></i></button>
-                                <button id="btn-grr-copy-t" class="icon-btn small-icon" title="縦横入替コピー"><i class="fa-solid fa-retweet"></i></button>
-                                <button id="btn-grr-clear" class="icon-btn small-icon" title="クリア"><i class="fa-solid fa-eraser"></i></button>
+                    <!-- KPI Summary -->
+                    <div class="stats-grid grr-stats-grid">
+                        <div class="stat-card" id="card-grr-percent">
+                            <div class="stat-title">%GR&amp;R (Study Variation)</div>
+                            <div class="stat-value" id="stat-grr-val">--</div>
+                            <div class="stat-sub"><span id="stat-grr-badge" class="grr-status-badge">判定待機</span></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-title">%Tolerance (P/T 比)</div>
+                            <div class="stat-value" id="stat-pt-val">--</div>
+                            <div class="stat-sub">公差消費率 (6σ_GRR / Tol)</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-title">区分数 (ndc)</div>
+                            <div class="stat-value" id="stat-ndc-val">--</div>
+                            <div class="stat-sub">推奨: ≥ 5 カテゴリ</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-title">部品間変動 (%PV)</div>
+                            <div class="stat-value" id="stat-pv-val">--</div>
+                            <div class="stat-sub">Study Var</div>
+                        </div>
+                    </div>
+
+                    <div id="grr-alerts"></div>
+
+                    <!-- Dual Diagnostic Charts Panel -->
+                    <div class="chart-container panel grr-chart-panel">
+                        <div class="chart-controls flex-between">
+                            <div class="gdt-mode-btns" style="display:flex; gap:6px;">
+                                <button id="btn-grr-view-comp" class="btn small active" onclick="switchGrrChart('comp')">
+                                    <i class="fa-solid fa-chart-bar"></i> <span data-i18n="grr_chart_comp">変動要因の内訳</span>
+                                </button>
+                                <button id="btn-grr-view-partop" class="btn small" onclick="switchGrrChart('partop')">
+                                    <i class="fa-solid fa-chart-line"></i> <span data-i18n="grr_chart_partop">部品 × 作業者プロット</span>
+                                </button>
                             </div>
                         </div>
-                        <div class="table-container tight grr-table-wrapper">
+                        <div id="grr-chart-comp-container" style="position:relative; width:100%; height:260px;">
+                            <canvas id="grr-chart"></canvas>
+                        </div>
+                        <div id="grr-chart-partop-container" style="position:relative; width:100%; height:260px; display:none;">
+                            <canvas id="grr-part-op-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Data Table (10x3x3) -->
+                    <div class="data-panel panel compact mt-3">
+                        <div class="flex-header compact-header">
+                            <h3><i class="fa-solid fa-table"></i> <span data-i18n="data_label">測定データ (10部品 × 3作業者 × 3回)</span></h3>
+                            <div class="table-actions" style="display:flex; gap:6px;">
+                                <button id="btn-grr-paste" class="btn small secondary" title="Excelから表データを貼付"><i class="fa-solid fa-paste"></i> <span data-i18n="btn_paste">Excel貼付</span></button>
+                                <button id="btn-grr-copy" class="btn small secondary" title="Excelコピー (標準)"><i class="fa-regular fa-copy"></i> <span data-i18n="btn_copy">コピー</span></button>
+                                <button id="btn-grr-copy-t" class="btn small secondary" title="縦横入替コピー"><i class="fa-solid fa-retweet"></i> 縦横入替</button>
+                                <button id="btn-grr-clear" class="btn small secondary" title="クリア"><i class="fa-solid fa-eraser"></i> <span data-i18n="btn_clear">クリア</span></button>
+                            </div>
+                        </div>
+                        <div class="table-container tight grr-table-wrapper" style="max-height:300px; overflow-y:auto;">
                             <table class="data-table excel-style" id="grr-table">
                                 <thead>
                                     <tr>
@@ -396,103 +541,132 @@
                                         <th colspan="3" data-i18n="op1_label">Op 1</th>
                                         <th colspan="3" data-i18n="op2_label">Op 2</th>
                                         <th colspan="3" data-i18n="op3_label">Op 3</th>
+                                        <th rowspan="2">部品平均</th>
                                     </tr>
                                     <tr>
-                                        <th data-i18n="tr1_label">Tr1</th><th data-i18n="tr2_label">Tr2</th><th data-i18n="tr3_label">Tr3</th>
-                                        <th data-i18n="tr1_label">Tr1</th><th data-i18n="tr2_label">Tr2</th><th data-i18n="tr3_label">Tr3</th>
-                                        <th data-i18n="tr1_label">Tr1</th><th data-i18n="tr2_label">Tr2</th><th data-i18n="tr3_label">Tr3</th>
+                                        <th>Tr1</th><th>Tr2</th><th>Tr3</th>
+                                        <th>Tr1</th><th>Tr2</th><th>Tr3</th>
+                                        <th>Tr1</th><th>Tr2</th><th>Tr3</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <!-- Rows will be injected by app.js -->
+                                    <!-- Injected by grr.js -->
                                 </tbody>
                             </table>
                         </div>
-                        
-                        <div class="csv-output-area mt-4">
-                            <label for="grr-csv-output" style="font-size: 0.8rem; color: var(--text-muted);">Data Trace (TSV / Excel):</label>
-                            <textarea id="grr-csv-output" rows="4" readonly placeholder="Calculated data will appear here..."></textarea>
+                    </div>
+
+                    <!-- Formula Reference Accordion -->
+                    <div class="panel mt-3 grr-formula-panel" style="font-size:0.8rem; background:rgba(0,0,0,0.1); border-left:3px solid var(--primary-color);">
+                        <div style="font-weight:600; color:var(--text-color); margin-bottom:6px;"><i class="fa-solid fa-square-root-variable"></i> <span data-i18n="formula_title">計算式の定義 (ANOVA法 & AIAG MSA第4版準拠)</span></div>
+                        <div class="grr-formula-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:6px; font-family:var(--font-mono);">
+                            <div>%GR&amp;R = 100 × (σ_GRR / σ_Total)</div>
+                            <div>ndc = 1.41 × (σ_Part / σ_GRR)</div>
+                            <div>σ_GRR = √(σ²_EV + σ²_AV)</div>
+                            <div>P/T比 = (6 × σ_GRR) / (USL - LSL)</div>
                         </div>
                     </div>
 
-                    <div class="chart-container panel">
-                        <canvas id="grr-chart"></canvas>
-                    </div>
-
-                </div>
-
-                <div class="grr-right-col">
-                    <div class="stats-grid">
-                        <div class="stat-card" id="card-grr-percent">
-                            <div class="stat-title">%GR&R</div>
-                            <div class="stat-value" id="stat-grr-val">--</div>
-                            <div class="stat-sub">Study Var</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-title">Number of Distinct Categories</div>
-                            <div class="stat-value" id="stat-ndc-val">--</div>
-                        </div>
-                    </div>
-
-                    <div id="grr-alerts"></div>
-
-                    <div id="improvement-vessel" class="mt-4"></div>
-
-                    <div class="panel mt-4 fade-in" style="font-size: 0.85rem; background: rgba(0,0,0,0.1); border-left: 4px solid var(--secondary-color);">
-                        <h4 style="margin-bottom: 0.8rem; color: var(--text-color);"><i class="fa-solid fa-square-root-variable"></i> <span data-i18n="formula_title">計算式の定義 (ANOVA法)</span></h4>
-                        <div style="display: grid; grid-template-columns: 1fr; gap: 8px; font-family: monospace;">
-                            <div><strong>%GR&amp;R</strong> = 100 &times; ( &sigma;<sub>GRR</sub> / &sigma;<sub>Total</sub> )</div>
-                            <div><strong>ndc</strong> = 1.41 &times; ( &sigma;<sub>Part</sub> / &sigma;<sub>GRR</sub> )</div>
-                            <div><strong>&sigma;<sub>GRR</sub></strong> = &radic;( &sigma;<sup>2</sup><sub>Repeat</sub> + &sigma;<sup>2</sup><sub>Reprod</sub> )</div>
-                            <div><strong>&sigma;<sup>2</sup><sub>Total</sub></strong> = &sigma;<sup>2</sup><sub>Part</sub> + &sigma;<sup>2</sup><sub>GRR</sub></div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
     </template>
 
-    <!-- GD&T Position Simulator Template -->
     <template id="view-gdt">
         <div class="container x-large fade-in">
             <div class="page-header flex-header">
                 <div>
                     <button class="back-link" onclick="window.location.hash='#home'"><i class="fa-solid fa-arrow-left"></i> <span data-i18n="back_home">ホームへ戻る</span></button>
-                    <h1 data-i18n="gdt_title">GD&T 位置度シミュレーター (3D/2D)</h1>
+                    <div class="title-with-badge">
+                        <h1 data-i18n="gdt_title">GD&amp;T 位置度シミュレーター (3D/2D)</h1>
+                        <span class="edu-badge"><i class="fa-solid fa-cube"></i> <span data-i18n="edu_notice_gdt">幾何公差 ＆ 最大実体公差方式 (MMC)</span></span>
+                    </div>
                 </div>
-                <p class="warning-text" data-i18n="warning_text">教育目的以外の使用は禁止します。</p>
             </div>
 
             <div class="layout-grid gdt-layout">
                 <!-- Left: Controls -->
                 <aside class="control-panel panel gdt-controls">
-                    <h2><i class="fa-solid fa-sliders"></i> <span data-i18n="settings">設定</span></h2>
+                    <!-- Presets -->
+                    <div class="control-group">
+                        <label class="group-label"><i class="fa-solid fa-wand-magic-sparkles"></i> <span data-i18n="gdt_presets_title">学習シナリオ</span></label>
+                        <div class="preset-btn-grid">
+                            <button type="button" class="btn small preset-btn" data-gdt-preset="center">
+                                <strong>原点近傍</strong>
+                                <small>理想合格</small>
+                            </button>
+                            <button type="button" class="btn small preset-btn" data-gdt-preset="corner">
+                                <strong>四角コーナー</strong>
+                                <small>±OK だが位置度NG</small>
+                            </button>
+                            <button type="button" class="btn small preset-btn" data-gdt-preset="mmc_bonus">
+                                <strong>MMCボーナス</strong>
+                                <small>Ⓜ適用で救済合格</small>
+                            </button>
+                            <button type="button" class="btn small preset-btn" data-gdt-preset="fail">
+                                <strong>完全不合格</strong>
+                                <small>両方NG</small>
+                            </button>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <h2><i class="fa-solid fa-drafting-compass"></i> <span data-i18n="gdt_spec_title">設計仕様 ＆ 公差設定</span></h2>
                     
                     <div class="control-group">
                         <label data-i18n="gdt_ted_label">理論的正確な寸法 (TED)</label>
                         <div class="flex-between">
                             <span style="font-size:0.8rem; margin-right:4px;">X:</span>
-                            <input type="number" id="gdt-ted-x" value="20.00" step="0.01" style="width:40%;">
+                            <input type="number" id="gdt-ted-x" value="20.00" step="0.10" style="width:40%;">
                             <span style="font-size:0.8rem; margin:0 4px;">Y:</span>
-                            <input type="number" id="gdt-ted-y" value="15.00" step="0.01" style="width:40%;">
+                            <input type="number" id="gdt-ted-y" value="15.00" step="0.10" style="width:40%;">
                         </div>
                     </div>
+
                     <div class="control-group">
-                        <label data-i18n="gdt_tol_type_label">公差表示タイプ</label>
-                        <div class="gdt-mode-btns" style="display:flex; gap:4px; margin-bottom:10px;">
-                            <button id="gdt-mode-both" class="btn small active" style="flex:1; font-size:0.75rem; padding:6px 4px;" onclick="setGdtMode('both')">両方</button>
-                            <button id="gdt-mode-pos" class="btn small" style="flex:1; font-size:0.75rem; padding:6px 4px;" onclick="setGdtMode('pos')">⌀ 位置度</button>
-                            <button id="gdt-mode-box" class="btn small" style="flex:1; font-size:0.75rem; padding:6px 4px;" onclick="setGdtMode('box')">± 公差</button>
+                        <label data-i18n="gdt_tol_type_label">公差比較モード</label>
+                        <div class="gdt-mode-btns" style="display:flex; gap:4px; margin-bottom:8px;">
+                            <button type="button" id="gdt-mode-both" class="btn small active" style="flex:1; font-size:0.75rem; padding:6px 2px;" onclick="setGdtMode('both')">同一値 (±T/2)</button>
+                            <button type="button" id="gdt-mode-inscribed" class="btn small" style="flex:1; font-size:0.75rem; padding:6px 2px;" onclick="setGdtMode('inscribed')">内接 (57%拡大)</button>
+                            <button type="button" id="gdt-mode-pos" class="btn small" style="flex:1; font-size:0.75rem; padding:6px 2px;" onclick="setGdtMode('pos')">⌀ 位置度のみ</button>
                         </div>
                     </div>
+
                     <div class="control-group">
                         <label for="gdt-tolerance" data-i18n="gdt_tol_label">位置度公差 (T)</label>
-                        <input type="number" id="gdt-tolerance" value="0.50" step="0.01">
+                        <input type="number" id="gdt-tolerance" value="0.50" step="0.01" min="0.05">
                     </div>
                     
                     <hr>
 
-                    <h3><i class="fa-solid fa-crosshairs"></i> <span data-i18n="gdt_actual_meas">実際の測定座標</span></h3>
+                    <h3><i class="fa-solid fa-compress"></i> <span data-i18n="gdt_mmc_title">最大実体公差方式 (MMC)</span></h3>
+                    <div class="control-group flex-between">
+                        <label for="gdt-mmc-toggle" data-i18n="gdt_mmc_toggle">MMC 適用 (Ⓜ)</label>
+                        <input type="checkbox" id="gdt-mmc-toggle" class="ios-switch">
+                    </div>
+                    <div id="gdt-mmc-settings" style="padding: 10px; background: rgba(0,0,0,0.12); border-radius: 8px; margin-bottom: 12px; border:1px solid var(--panel-border);">
+                        <div class="control-group">
+                            <label for="gdt-lmc-limit" data-i18n="gdt_mmc_limit">MMC時の穴径 (最小許容径)</label>
+                            <input type="number" id="gdt-lmc-limit" value="10.00" step="0.01">
+                        </div>
+                        <div class="control-group">
+                            <label for="gdt-actual-hole" data-i18n="gdt_actual_hole">実際の穴径測定値</label>
+                            <input type="number" id="gdt-actual-hole" value="10.15" step="0.01">
+                        </div>
+                        <div class="flex-between" style="font-size: 0.85rem; color: var(--text-muted);">
+                            <span data-i18n="gdt_bonus">ボーナス公差:</span>
+                            <strong id="gdt-bonus-val" style="color:var(--accent-actual); font-family:var(--font-mono);">+0.150</strong>
+                        </div>
+                        <div class="flex-between mt-1" style="font-size: 0.85rem;">
+                            <span data-i18n="gdt_total_tol">実効位置度公差:</span>
+                            <strong id="gdt-total-tol-val" style="color:var(--primary-color); font-family:var(--font-mono); font-size:1rem;">⌀0.650</strong>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <h3><i class="fa-solid fa-crosshairs"></i> <span data-i18n="gdt_actual_meas">実際の測定座標 (ドラッグ可)</span></h3>
                     <div class="control-group">
                         <div class="flex-between mb-2">
                             <span style="font-size:0.8rem; margin-right:4px;">X:</span>
@@ -503,38 +677,10 @@
                     </div>
                     
                     <button id="btn-gdt-random" class="btn secondary full-width mt-1"><i class="fa-solid fa-dice"></i> <span data-i18n="btn_rand_meas">ランダムズレ生成</span></button>
-                    
-                    <hr>
 
-                    <h3><i class="fa-solid fa-compress"></i> <span data-i18n="gdt_mmc_title">最大実体公差方式 (MMC)</span></h3>
-                    <div class="control-group flex-between">
-                        <label for="gdt-mmc-toggle" data-i18n="gdt_mmc_toggle">MMC 適用 (Ⓜ)</label>
-                        <input type="checkbox" id="gdt-mmc-toggle" class="ios-switch">
-                    </div>
-                    <div id="gdt-mmc-settings" style="padding: 10px; background: rgba(0,0,0,0.1); border-radius: 6px; margin-bottom: 15px;">
-                        <div class="control-group">
-                            <label for="gdt-lmc-limit" data-i18n="gdt_mmc_limit">MMC時の穴径 (最小許容径)</label>
-                            <input type="number" id="gdt-lmc-limit" value="10.00" step="0.01">
-                        </div>
-                        <div class="control-group">
-                            <label for="gdt-actual-hole" data-i18n="gdt_actual_hole">実際の穴径測定値</label>
-                            <input type="number" id="gdt-actual-hole" value="10.15" step="0.01">
-                        </div>
-                        <div class="flex-between" style="font-size: 0.85rem; color: var(--secondary-color);">
-                            <span data-i18n="gdt_bonus">ボーナス公差:</span>
-                            <strong id="gdt-bonus-val">+0.15</strong>
-                        </div>
-                        <div class="flex-between mt-1" style="font-size: 0.85rem; font-weight:bold;">
-                            <span data-i18n="gdt_total_tol">実効位置度公差:</span>
-                            <strong id="gdt-total-tol-val">0.65</strong>
-                        </div>
-                    </div>
-                    
-                    <div id="gdt-alerts" class="mt-3"></div>
-
-                    <!-- GD&T Notation Display -->
-                    <div id="gdt-notation-box" class="mt-3" style="padding:10px; background:rgba(0,0,0,0.15); border-radius:8px; font-family:'Courier New',monospace; font-size:0.85rem; line-height:1.6;">
-                        <div style="font-weight:bold; margin-bottom:6px; font-family:inherit; color:var(--secondary-color);" data-i18n="gdt_notation_title">公差表記</div>
+                    <!-- Feature Control Frame Display -->
+                    <div id="gdt-notation-box" class="mt-3 gdt-fcf-box">
+                        <div class="fcf-header"><i class="fa-solid fa-id-card-clip"></i> <span data-i18n="gdt_notation_title">JIS/ISO 幾何公差記入枠</span></div>
                         <div id="gdt-notation-content"></div>
                     </div>
                 </aside>
@@ -542,61 +688,80 @@
                 <!-- Right: Dual Views -->
                 <div class="main-content" style="min-width: 0;">
                     
-                    <div class="gdt-dual-pane" style="display: flex; gap: 20px; height: 100%; width: 100%;">
-                        <!-- 3D / 2D Canvas Pane (Tabs) -->
-                        <div class="panel gdt-pane-left flex-col" style="flex: 1.5; padding: 0; min-height: 480px; min-width: 0; display: flex; flex-direction: column; position: relative;">
-                            <div class="flex-header compact-header" style="padding: 10px 15px 0 15px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border-color); display: flex; gap: 0; align-items: flex-end;">
-                                <button class="gdt-tab-btn active" onclick="switchGdtTab('3d')" id="gdt-tab-btn-3d"><i class="fa-solid fa-cube"></i> <span data-i18n="gdt_3d_view">3D 空間ビュー</span></button>
-                                <button class="gdt-tab-btn" onclick="switchGdtTab('2d')" id="gdt-tab-btn-2d"><i class="fa-solid fa-search"></i> <span>2D 詳細ビュー</span></button>
+                    <!-- Verdict & Live Metrics Board -->
+                    <div class="gdt-verdict-board stats-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-bottom: 12px; gap: 10px;">
+                        <div class="stat-card" id="gdt-card-status">
+                            <div class="stat-title">総合判定</div>
+                            <div class="stat-value" id="gdt-stat-verdict" style="font-size: 1.25rem;">判定中</div>
+                            <div class="stat-sub" id="gdt-stat-verdict-desc">公差解析</div>
+                        </div>
+                        <div class="stat-card highlight">
+                            <div class="stat-title" data-i18n="gdt_pos_error">位置度ズレ量 (⌀2×r)</div>
+                            <div class="stat-value" id="gdt-stat-error" style="font-size: 1.4rem;">0.000</div>
+                            <div class="stat-sub">許容: ⌀<span id="gdt-stat-limit">0.500</span></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-title">偏差 (ΔX / ΔY)</div>
+                            <div class="stat-value" id="gdt-stat-pm" style="font-size: 1.1rem;">±0.000 / ±0.000</div>
+                            <div class="stat-sub">±公差許容: ±<span id="gdt-stat-pm-limit">0.250</span></div>
+                        </div>
+                    </div>
+
+                    <div id="gdt-alerts" style="margin-bottom:12px;"></div>
+
+                    <!-- Visual Workspace: 3D, 2D Interactive, and Drawing -->
+                    <div class="gdt-dual-pane" style="display: flex; gap: 16px; width: 100%;">
+                        <!-- Left View Pane: 3D & 2D Tabs -->
+                        <div class="panel gdt-pane-left flex-col" style="flex: 1.4; padding: 0; min-height: 520px; min-width: 0; display: flex; flex-direction: column; position: relative;">
+                            <div class="flex-header compact-header" style="padding: 10px 14px 0 14px; background: rgba(0,0,0,0.15); border-bottom: 1px solid var(--panel-border); display: flex; justify-content: space-between; align-items: flex-end;">
+                                <div style="display:flex; gap:0;">
+                                    <button class="gdt-tab-btn active" onclick="switchGdtTab('3d')" id="gdt-tab-btn-3d"><i class="fa-solid fa-cube"></i> <span data-i18n="gdt_3d_view">3D 空間ビュー</span></button>
+                                    <button class="gdt-tab-btn" onclick="switchGdtTab('2d')" id="gdt-tab-btn-2d"><i class="fa-solid fa-crosshairs"></i> <span data-i18n="gdt_2d_view">2D 詳細ビュー (ドラッグ操作)</span></button>
+                                </div>
+                                <span class="gdt-tab-hint" id="gdt-tab-hint" style="font-size:0.75rem; color:var(--text-muted); padding-bottom:4px;"><i class="fa-solid fa-arrows-up-down-left-right"></i> ドラッグで3D回転</span>
                             </div>
                             
-                            <div id="gdt-3d-container" style="flex: 1; position: relative; display: block; overflow: hidden; background: var(--panel-bg);">
+                            <!-- 3D Viewport -->
+                            <div id="gdt-3d-container" style="flex: 1; position: relative; display: block; overflow: hidden; background: var(--panel-bg); min-height:460px;">
                                 <!-- Three.js Canvas injected here -->
                             </div>
                             
-                            <button id="gdt-3d-rotate-btn" onclick="toggleGdt3dRotate()" style="position: absolute; bottom: 15px; right: 15px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); color: #fff; padding: 5px 10px; border-radius: 4px; cursor: pointer; z-index: 10;">
-                                <i id="gdt-3d-rotate-icon" class="fa-solid fa-pause"></i> <span id="gdt-3d-rotate-text" data-i18n="gdt_stop_rot">回転停止</span>
-                            </button>
+                            <!-- Floating 3D HUD Toolbar -->
+                            <div id="gdt-3d-hud" class="gdt-3d-hud" style="position: absolute; bottom: 12px; left: 12px; display: flex; gap: 6px; z-index: 10;">
+                                <button type="button" class="btn small hud-btn" onclick="setGdtCameraView('iso')" title="等角投影"><i class="fa-solid fa-cube"></i> Iso</button>
+                                <button type="button" class="btn small hud-btn" onclick="setGdtCameraView('top')" title="上面 (XY平面)"><i class="fa-solid fa-arrow-down"></i> Top</button>
+                                <button type="button" class="btn small hud-btn" onclick="setGdtCameraView('front')" title="正面 (XZ断面)"><i class="fa-solid fa-arrow-right"></i> Front</button>
+                                <button type="button" id="gdt-3d-rotate-btn" class="btn small hud-btn" onclick="toggleGdt3dRotate()">
+                                    <i id="gdt-3d-rotate-icon" class="fa-solid fa-pause"></i> <span id="gdt-3d-rotate-text" data-i18n="gdt_stop_rot">回転停止</span>
+                                </button>
+                            </div>
                             
-                            <div id="gdt-2d-container" style="flex: 1; display: none; overflow: hidden; background: var(--panel-bg); padding: 10px; align-items: center; justify-content: center;">
-                                <canvas id="gdt-2d-canvas" width="800" height="800" style="display: block; max-width: 100%; max-height: 100%; margin: auto; aspect-ratio: 1;"></canvas>
+                            <!-- 2D Viewport -->
+                            <div id="gdt-2d-container" style="flex: 1; display: none; overflow: hidden; background: var(--panel-bg); padding: 12px; position:relative; align-items: center; justify-content: center;">
+                                <div class="gdt-drag-hint-badge"><i class="fa-solid fa-hand-pointer"></i> 測定点 (●) を直接ドラッグして動かせます</div>
+                                <canvas id="gdt-2d-canvas" width="800" height="800" style="display: block; max-width: 100%; max-height: 100%; margin: auto; aspect-ratio: 1; cursor: crosshair;"></canvas>
                             </div>
                         </div>
 
-                        <!-- Right Pane: Stats & Drawing View -->
+                        <!-- Right View Pane: Blueprint Drawing View -->
                         <div class="gdt-right-col flex-col" style="flex: 1; min-width: 0;">
-                            
-                            <!-- Results Board -->
-                            <div class="stats-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 12px; gap: 10px;">
-                                <div class="stat-card highlight">
-                                    <div class="stat-title" data-i18n="gdt_pos_error">位置度 (⌀)</div>
-                                    <div class="stat-value" id="gdt-stat-error" style="font-size: 1.5rem; margin: 6px 0;">0.000</div>
-                                    <div class="stat-sub">Limit: ⌀<span id="gdt-stat-limit">0.500</span></div>
+                            <div class="panel gdt-pane-drawing flex-col" style="flex: 1; padding: 0; display:flex; flex-direction:column; min-height:520px;">
+                                <div class="flex-header compact-header" style="padding: 10px 14px; background: rgba(0,0,0,0.15); border-bottom: 1px solid var(--panel-border);">
+                                    <h3 style="margin: 0; font-size: 0.95rem;"><i class="fa-solid fa-drafting-compass"></i> <span data-i18n="gdt_drawing_title">図面ビュー (JIS / ISO 幾何公差表記)</span></h3>
                                 </div>
-                                <div class="stat-card">
-                                    <div class="stat-title">±公差 (ΔX / ΔY)</div>
-                                    <div class="stat-value" id="gdt-stat-pm" style="font-size: 1.2rem; margin: 6px 0;">±0.000 / ±0.000</div>
-                                    <div class="stat-sub">Limit: ±<span id="gdt-stat-pm-limit">0.250</span></div>
-                                </div>
-                            </div>
-
-                            <!-- Blueprint Drawing View -->
-                            <div class="panel gdt-pane-drawing flex-col" style="flex: 1; padding: 0; display:flex; flex-direction:column;">
-                                <div class="flex-header compact-header" style="padding: 10px 15px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border-color);">
-                                    <h3 style="margin: 0; font-size: 1rem;"><i class="fa-solid fa-drafting-compass"></i> <span>図面ビュー</span></h3>
-                                </div>
-                                <div id="gdt-drawing-container" style="flex: 1; display: flex; justify-content: center; align-items: center; padding: 20px;">
-                                    <canvas id="gdt-drawing-canvas" width="400" height="400" style="max-width: 100%; border-radius: 8px; background: var(--panel-bg); border: 1px solid var(--border-color);"></canvas>
+                                <div id="gdt-drawing-container" style="flex: 1; display: flex; justify-content: center; align-items: center; padding: 14px;">
+                                    <canvas id="gdt-drawing-canvas" width="600" height="600" style="max-width: 100%; border-radius: 8px; background: #0f172a; border: 1px solid var(--panel-border);"></canvas>
                                 </div>
                                 <!-- Legend -->
-                                <div style="padding: 10px 15px; display: flex; justify-content: center; gap: 20px; font-size: 0.8rem; background: rgba(0,0,0,0.1); flex-wrap: wrap;">
-                                    <div style="display:flex; align-items:center;"><span style="display:inline-block; width:12px; height:12px; background:rgba(6,182,212,0.2); border:1px solid #06b6d4; border-radius:50%; margin-right:6px;"></span><span data-i18n="gdt_circle_tol">位置度公差</span></div>
-                                    <div style="display:flex; align-items:center;"><span style="display:inline-block; width:12px; height:12px; background:rgba(239,68,68,0.1); border:1px dashed #ef4444; margin-right:6px;"></span><span data-i18n="gdt_box_tol">±公差領域</span></div>
-                                    <div style="display:flex; align-items:center;"><span style="display:inline-block; width:12px; height:12px; background:#10b981; border-radius:50%; margin-right:6px;"></span><span data-i18n="gdt_act_pt">測定点</span></div>
+                                <div class="gdt-legend-bar" style="padding: 8px 12px; display: flex; justify-content: center; gap: 16px; font-size: 0.75rem; background: rgba(0,0,0,0.1); border-top:1px solid var(--panel-border); flex-wrap: wrap;">
+                                    <div style="display:flex; align-items:center;"><span style="display:inline-block; width:10px; height:10px; background:rgba(6,182,212,0.25); border:1.5px solid #06b6d4; border-radius:50%; margin-right:5px;"></span><span data-i18n="gdt_circle_tol">位置度公差 (⌀T)</span></div>
+                                    <div style="display:flex; align-items:center;"><span style="display:inline-block; width:10px; height:10px; background:rgba(239,68,68,0.15); border:1.5px dashed #ef4444; margin-right:5px;"></span><span data-i18n="gdt_box_tol">±公差領域</span></div>
+                                    <div style="display:flex; align-items:center;"><span style="display:inline-block; width:10px; height:10px; background:#10b981; border-radius:50%; margin-right:5px;"></span><span data-i18n="gdt_act_pt">測定点</span></div>
                                 </div>
                             </div>
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>
