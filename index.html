@@ -640,27 +640,36 @@
                     
                     <hr>
 
-                    <h3><i class="fa-solid fa-compress"></i> <span data-i18n="gdt_mmc_title">最大実体公差方式 (MMC)</span></h3>
+                    <h3><i class="fa-solid fa-bolt"></i> <span data-i18n="gdt_mmc_title">最大実体公差 (MMC) ＆ 相手ピン締結</span></h3>
                     <div class="control-group flex-between">
-                        <label for="gdt-mmc-toggle" data-i18n="gdt_mmc_toggle">MMC 適用 (Ⓜ)</label>
-                        <input type="checkbox" id="gdt-mmc-toggle" class="ios-switch">
+                        <label for="gdt-mmc-toggle" data-i18n="gdt_mmc_toggle">MMC 適用 (Ⓜ) / 締結ガタ考慮</label>
+                        <input type="checkbox" id="gdt-mmc-toggle" class="ios-switch" checked>
                     </div>
-                    <div id="gdt-mmc-settings" style="padding: 10px; background: rgba(0,0,0,0.12); border-radius: 8px; margin-bottom: 12px; border:1px solid var(--panel-border);">
-                        <div class="control-group">
-                            <label for="gdt-lmc-limit" data-i18n="gdt_mmc_limit">MMC時の穴径 (最小許容径)</label>
-                            <input type="number" id="gdt-lmc-limit" value="10.00" step="0.01">
+                    <div id="gdt-mmc-settings" style="padding: 10px; background: rgba(0,0,0,0.14); border-radius: 8px; margin-bottom: 12px; border:1px solid var(--panel-border);">
+                        <div class="control-group-grid2">
+                            <div class="control-group" style="margin-bottom:6px;">
+                                <label for="gdt-lmc-limit" style="font-size:0.78rem;" data-i18n="gdt_mmc_limit">MMC穴径 (最小径)</label>
+                                <input type="number" id="gdt-lmc-limit" value="10.00" step="0.01">
+                            </div>
+                            <div class="control-group" style="margin-bottom:6px;">
+                                <label for="gdt-actual-hole" style="font-size:0.78rem;" data-i18n="gdt_actual_hole">実測穴径 (⌀H)</label>
+                                <input type="number" id="gdt-actual-hole" value="10.15" step="0.01">
+                            </div>
                         </div>
-                        <div class="control-group">
-                            <label for="gdt-actual-hole" data-i18n="gdt_actual_hole">実際の穴径測定値</label>
-                            <input type="number" id="gdt-actual-hole" value="10.15" step="0.01">
+                        <div class="flex-between" style="font-size: 0.8rem; color: var(--text-muted); padding-top:4px; border-top:1px dashed var(--panel-border);">
+                            <span>相手ボルト/ピン最大径 (VC):</span>
+                            <strong id="gdt-vc-pin-val" style="color:var(--text-color); font-family:var(--font-mono);">⌀9.500</strong>
                         </div>
-                        <div class="flex-between" style="font-size: 0.85rem; color: var(--text-muted);">
-                            <span data-i18n="gdt_bonus">ボーナス公差:</span>
-                            <strong id="gdt-bonus-val" style="color:var(--accent-actual); font-family:var(--font-mono);">+0.150</strong>
+                        <div class="flex-between mt-1" style="font-size: 0.82rem; color: var(--text-muted);">
+                            <span data-i18n="gdt_bonus">穴拡大によるボーナス公差:</span>
+                            <strong id="gdt-bonus-val" style="color:#f59e0b; font-family:var(--font-mono);">+0.150</strong>
                         </div>
                         <div class="flex-between mt-1" style="font-size: 0.85rem;">
-                            <span data-i18n="gdt_total_tol">実効位置度公差:</span>
-                            <strong id="gdt-total-tol-val" style="color:var(--primary-color); font-family:var(--font-mono); font-size:1rem;">⌀0.650</strong>
+                            <span data-i18n="gdt_total_tol">実効位置度公差 (⌀T_eff):</span>
+                            <strong id="gdt-total-tol-val" style="color:var(--primary-color); font-family:var(--font-mono); font-size:0.98rem;">⌀0.650</strong>
+                        </div>
+                        <div id="gdt-mating-explain" style="margin-top:8px; padding:7px 9px; border-radius:6px; font-size:0.76rem; line-height:1.45; background:rgba(13,148,136,0.12); border-left:3px solid var(--accent-actual); color:var(--text-color);">
+                            <strong>🔩 締結判定:</strong> 穴が最小径より大きいため隙間が増え、ボルトが干渉せず通ります。
                         </div>
                     </div>
 

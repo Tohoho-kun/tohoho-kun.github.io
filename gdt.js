@@ -148,26 +148,63 @@ function calculateGdt() {
     let totalTol = baseTol;
     let bonus = 0;
 
+    const mmcHole = parseFloat(document.getElementById('gdt-lmc-limit')?.value) || 10.0;
+    const actHole = parseFloat(document.getElementById('gdt-actual-hole')?.value) || 10.15;
+    const vcPinDia = Math.max(0.1, mmcHole - baseTol); // Virtual Condition mating pin diameter
+
     const useMmc = document.getElementById('gdt-mmc-toggle')?.checked || false;
     if (useMmc) {
-        const lmc = parseFloat(document.getElementById('gdt-lmc-limit').value) || 0;
-        const actHole = parseFloat(document.getElementById('gdt-actual-hole').value) || 0;
-        bonus = Math.max(0, actHole - lmc);
+        bonus = Math.max(0, actHole - mmcHole);
         totalTol += bonus;
     }
+
+    const vcEl = document.getElementById('gdt-vc-pin-val');
+    if (vcEl) vcEl.innerText = '⌀' + vcPinDia.toFixed(3);
     const bEl = document.getElementById('gdt-bonus-val');
     const tEl = document.getElementById('gdt-total-tol-val');
-    if (bEl) bEl.innerText = '+' + bonus.toFixed(3);
+    if (bEl) bEl.innerText = useMmc ? ('+' + bonus.toFixed(3)) : '+0.000 (ⓂOFF)';
     if (tEl) tEl.innerText = '⌀' + totalTol.toFixed(3);
 
     const dx = actX - tedX;
     const dy = actY - tedY;
-    const posError = 2 * Math.sqrt(dx * dx + dy * dy);
+    const radialDev = Math.sqrt(dx * dx + dy * dy);
+    const posError = 2 * radialDev;
 
     const mode = gdtDisplayMode;
     const boxHalfTol = mode === 'inscribed' ? (totalTol / (2 * Math.SQRT2)) : (totalTol / 2);
     const isPassBox = Math.abs(dx) <= boxHalfTol && Math.abs(dy) <= boxHalfTol;
     const isPassPos = posError <= totalTol;
+
+    // Physical Mating Check: Min radial clearance between actual hole wall and Virtual Condition bolt at TED
+    // Hole radius = actHole/2 centered at (dx, dy); Bolt radius = vcPinDia/2 centered at (0, 0)
+    // Radial clearance on tightest side = (actHole/2) - (vcPinDia/2 + radialDev) = (actHole - vcPinDia - posError) / 2
+    const minWallClearance = (actHole - vcPinDia - posError) / 2;
+    const explainEl = document.getElementById('gdt-mating-explain');
+    if (explainEl) {
+        if (actHole < mmcHole) {
+            explainEl.style.background = 'rgba(225, 29, 72, 0.14)';
+            explainEl.style.borderLeftColor = 'var(--accent-danger)';
+            explainEl.innerHTML = `<strong>✗ 穴径不足 (NG):</strong> 実測穴径 (⌀${actHole.toFixed(2)}) が最小許容径 (MMC ⌀${mmcHole.toFixed(2)}) を下回っています。`;
+        } else if (minWallClearance >= -1e-6) {
+            if (useMmc && posError > baseTol) {
+                explainEl.style.background = 'rgba(245, 158, 11, 0.15)';
+                explainEl.style.borderLeftColor = '#f59e0b';
+                explainEl.innerHTML = `<strong>Ⓜ ボーナス救済で締結OK!</strong> 基本公差(⌀${baseTol.toFixed(2)})は超えていますが、穴が +${bonus.toFixed(2)}mm 大きく加工されたため、中心にある相手ボルト(⌀${vcPinDia.toFixed(2)})と干渉せず通ります（最小隙間: <strong>${Math.max(0, minWallClearance).toFixed(3)}mm</strong>）。`;
+            } else if (!useMmc && posError > baseTol) {
+                explainEl.style.background = 'rgba(245, 158, 11, 0.15)';
+                explainEl.style.borderLeftColor = '#f59e0b';
+                explainEl.innerHTML = `<strong>💡 物理的にはボルトが通ります!</strong> 穴が大きいため相手ボルト(⌀${vcPinDia.toFixed(2)})との隙間は <strong>+${minWallClearance.toFixed(3)}mm</strong> 残っています。「MMC 適用 (Ⓜ)」をONにするとボーナス公差(+${(actHole - mmcHole).toFixed(3)})で合格にできます。`;
+            } else {
+                explainEl.style.background = 'rgba(13, 148, 136, 0.12)';
+                explainEl.style.borderLeftColor = 'var(--accent-actual)';
+                explainEl.innerHTML = `<strong>🔩 締結OK (ボルト貫通):</strong> 理想位置(TED)の相手ボルト(⌀${vcPinDia.toFixed(2)})に対して穴壁が干渉せず通過します（片側最小クリアランス: <strong>+${Math.max(0, minWallClearance).toFixed(3)}mm</strong>）。`;
+            }
+        } else {
+            explainEl.style.background = 'rgba(225, 29, 72, 0.14)';
+            explainEl.style.borderLeftColor = 'var(--accent-danger)';
+            explainEl.innerHTML = `<strong>💥 ボルト干渉 (締結不可):</strong> 穴位置のズレが大きすぎ、理想位置の相手ボルト(⌀${vcPinDia.toFixed(2)})に穴壁が <strong>${Math.abs(minWallClearance).toFixed(3)}mm</strong> 干渉して通りません！`;
+        }
+    }
 
     // Update top KPI cards
     const errEl = document.getElementById('gdt-stat-error');
@@ -482,6 +519,107 @@ function renderGdt2D(dx, dy, baseTol, totalTol, isPassPos, isPassBox) {
     ctx.fillText(`ΔX:${dx >= 0 ? '+' : ''}${dx.toFixed(3)} ΔY:${dy >= 0 ? '+' : ''}${dy.toFixed(3)}`, px + 14, py + 8);
 
     ctx.restore();
+
+    // --- Mini Mating Bolt & Hole Cross-Section Inset (Bottom-Right Corner) ---
+    const mmcHole = parseFloat(document.getElementById('gdt-lmc-limit')?.value) || 10.0;
+    const actHole = parseFloat(document.getElementById('gdt-actual-hole')?.value) || 10.15;
+    const vcPinDia = Math.max(0.1, mmcHole - baseTol);
+    const radialDev = Math.sqrt(dx * dx + dy * dy);
+    const minWallClearance = (actHole - vcPinDia) / 2 - radialDev;
+    const isMatingOk = minWallClearance >= -1e-6 && actHole >= mmcHole;
+
+    const insetW = 225;
+    const insetH = 195;
+    const ix = w - insetW - 14;
+    const iy = h - insetH - 14;
+
+    ctx.save();
+    ctx.fillStyle = isDark ? 'rgba(15, 23, 42, 0.90)' : 'rgba(255, 255, 255, 0.92)';
+    ctx.strokeStyle = isMatingOk ? 'rgba(20, 184, 166, 0.65)' : 'rgba(225, 29, 72, 0.75)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    if (ctx.roundRect) {
+        ctx.roundRect(ix, iy, insetW, insetH, 10);
+    } else {
+        ctx.rect(ix, iy, insetW, insetH);
+    }
+    ctx.fill();
+    ctx.stroke();
+
+    // Title
+    ctx.fillStyle = isDark ? '#f8fafc' : '#0f172a';
+    ctx.font = '700 12px "Inter", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('🔩 相手ボルト・実測穴 締結断面', ix + 12, iy + 20);
+
+    const icx = ix + insetW / 2;
+    const icy = iy + 95;
+    // Exaggerate clearance difference relative to pin so user clearly sees the gap
+    const pinDrawR = 36;
+    const mag = 36 / Math.max(baseTol, 0.25); // visual magnification for gap/deviation
+    const holeDrawR = Math.min(68, Math.max(24, pinDrawR + ((actHole - vcPinDia) / 2) * mag));
+    const mmcHoleDrawR = Math.min(68, Math.max(24, pinDrawR + (baseTol / 2) * mag));
+
+    const unitX = radialDev > 1e-6 ? (dx / radialDev) : 0;
+    const unitY = radialDev > 1e-6 ? (-dy / radialDev) : 0;
+    const shiftPx = radialDev * mag;
+    const hcx = icx + unitX * shiftPx;
+    const hcy = icy + unitY * shiftPx;
+
+    // Workpiece background shading around hole
+    ctx.fillStyle = isDark ? 'rgba(148, 163, 184, 0.14)' : 'rgba(100, 116, 139, 0.15)';
+    ctx.beginPath();
+    ctx.arc(hcx, hcy, holeDrawR + 12, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Actual Drilled Hole (White/Dark bore interior)
+    ctx.fillStyle = isDark ? '#090d16' : '#f1f5f9';
+    ctx.strokeStyle = isMatingOk ? '#14b8a6' : '#e11d48';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(hcx, hcy, holeDrawR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Dashed reference: MMC minimum hole size
+    ctx.strokeStyle = 'rgba(245, 158, 11, 0.55)';
+    ctx.lineWidth = 1.2;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.arc(hcx, hcy, mmcHoleDrawR, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Fixed Mating Bolt / Gage Pin at True Position (icx, icy)
+    ctx.fillStyle = isMatingOk ? 'rgba(245, 158, 11, 0.85)' : 'rgba(225, 29, 72, 0.85)';
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(icx, icy, pinDrawR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Bolt head hex/crosshair mark
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.65)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(icx - 8, icy); ctx.lineTo(icx + 8, icy);
+    ctx.moveTo(icx, icy - 8); ctx.lineTo(icx, icy + 8);
+    ctx.stroke();
+
+    // Caption at bottom of inset
+    ctx.font = '700 11.5px "JetBrains Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = isMatingOk ? (isDark ? '#2dd4bf' : '#0d9488') : '#e11d48';
+    const gapLabel = minWallClearance >= 0
+        ? `✓ ボルト貫通OK (最小隙間 +${minWallClearance.toFixed(3)})`
+        : `✗ ボルト干渉NG (食い込み ${minWallClearance.toFixed(3)})`;
+    ctx.fillText(gapLabel, icx, iy + insetH - 24);
+
+    ctx.font = '500 10.5px "JetBrains Mono", monospace';
+    ctx.fillStyle = isDark ? '#94a3b8' : '#475569';
+    ctx.fillText(`穴⌀${actHole.toFixed(2)} vs 相手軸⌀${vcPinDia.toFixed(2)}`, icx, iy + insetH - 9);
+    ctx.restore();
 }
 
 // Helper: calculate nice tick step
@@ -516,24 +654,64 @@ function drawArrow2D(ctx, x, y, dirX, dirY) {
 
 // --- 3D Rendering (Three.js) ---
 
-// Helper: create text sprite for axis labels
-function createAxisLabel(text, x, y, z, color) {
+// Helper: create text sprite for axis/datum labels
+function createAxisLabel(text, x, y, z, color, scaleW, scaleH) {
     const canvas = document.createElement('canvas');
-    canvas.width = 64;
-    canvas.height = 32;
+    canvas.width = 160;
+    canvas.height = 48;
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = color || '#ffffff';
-    ctx.font = 'bold 24px Inter, Arial, sans-serif';
+    ctx.fillStyle = typeof color === 'number' ? '#' + color.toString(16).padStart(6, '0') : (color || '#ffffff');
+    ctx.font = 'bold 26px "JetBrains Mono", Inter, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(text, 32, 16);
+    ctx.fillText(text, 80, 24);
     
     const texture = new THREE.CanvasTexture(canvas);
-    const mat = new THREE.SpriteMaterial({ map: texture, transparent: true });
+    const mat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
     const sprite = new THREE.Sprite(mat);
     sprite.position.set(x, y, z);
-    sprite.scale.set(0.8, 0.4, 1);
+    sprite.scale.set(scaleW || 0.9, scaleH || 0.35, 1);
     return sprite;
+}
+
+// Helper: build a realistic machined aluminum block with an actual cylindrical through-hole
+function createWorkpieceWithHoleGeometry(blockSize, height, holeCenterX, holeCenterZ, holeRadius) {
+    const half = blockSize / 2;
+    const bev = 0.25; // corner bevel on outer block
+    const shape = new THREE.Shape();
+    shape.moveTo(-half + bev, -half);
+    shape.lineTo(half - bev, -half);
+    shape.lineTo(half, -half + bev);
+    shape.lineTo(half, half - bev);
+    shape.lineTo(half - bev, half);
+    shape.lineTo(-half + bev, half);
+    shape.lineTo(-half, half - bev);
+    shape.lineTo(-half, -half + bev);
+    shape.closePath();
+
+    // Clamp hole inside block so geometry never self-intersects
+    const safeR = Math.min(Math.max(holeRadius, 0.35), half * 0.68);
+    const maxOffset = half - safeR - 0.35;
+    const hx = Math.max(-maxOffset, Math.min(maxOffset, holeCenterX));
+    // Note: rotateX(-PI/2) maps shape Y -> 3D -Z, so to place hole at +holeCenterZ in 3D, shape Y is -holeCenterZ
+    const hy = Math.max(-maxOffset, Math.min(maxOffset, -holeCenterZ));
+
+    const holePath = new THREE.Path();
+    holePath.absarc(hx, hy, safeR, 0, Math.PI * 2, true);
+    shape.holes.push(holePath);
+
+    const extrudeSettings = {
+        depth: height,
+        bevelEnabled: true,
+        bevelSegments: 2,
+        steps: 1,
+        bevelSize: 0.06,
+        bevelThickness: 0.06,
+        curveSegments: 48
+    };
+    const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+    geo.rotateX(-Math.PI / 2);
+    return { geo, safeR, clampedX: hx, clampedZ: -hy };
 }
 
 // --- Blueprint Drawing View ---
@@ -768,15 +946,18 @@ function initGdtScene() {
         gdtControls = null;
     }
     
-    // Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    gdtScene.add(ambientLight);
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    dirLight.position.set(10, 20, 10);
+    // Studio CAD Lighting
+    const hemiLight = new THREE.HemisphereLight(0xf8fafc, 0x334155, 0.75);
+    gdtScene.add(hemiLight);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.95);
+    dirLight.position.set(12, 22, 14);
     gdtScene.add(dirLight);
+    const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.45);
+    rimLight.position.set(-12, 10, -10);
+    gdtScene.add(rimLight);
 
-    // Grid (Datum A) - sized to surround the hole
-    gdtGridHelper = new THREE.GridHelper(8, 8, 0x888888, 0x444444);
+    // Grid (Datum A) - sized to surround the workpiece
+    gdtGridHelper = new THREE.GridHelper(10, 10, 0x64748b, 0x334155);
     gdtScene.add(gdtGridHelper);
     
     // HUD Compass (Top Right)
@@ -801,26 +982,117 @@ function initGdtScene() {
     gdtHudAxesGroup.add(new THREE.Line(zAxisGeo, new THREE.LineBasicMaterial({ color: 0x4488ff, linewidth: 2 })));
     gdtHudAxesGroup.add(createAxisLabel('Z', 0, 1.2, 0, 0x4488ff));
 
-    
-    // Group for dynamic meshes
+    // Machined Workpiece Group (Aluminum block with a real bored through-hole + Datum A/B/C rails)
     gdtPartGroup = new THREE.Group();
-    const plateGeo = new THREE.BoxGeometry(6.5, GDT_HEIGHT, 6.5);
-    const plateMat = new THREE.MeshStandardMaterial({
-        color: 0x64748b,
+    const blockSize = 7.4;
+    const initPart = createWorkpieceWithHoleGeometry(blockSize, GDT_HEIGHT, 0, 0, 1.65);
+
+    const blockMat = new THREE.MeshStandardMaterial({
+        color: 0x94a3b8,
         transparent: true,
-        opacity: 0.08,
-        roughness: 0.4,
-        metalness: 0.2,
+        opacity: 0.44,
+        roughness: 0.32,
+        metalness: 0.55,
+        side: THREE.DoubleSide,
         depthWrite: false
     });
-    const plateMesh = new THREE.Mesh(plateGeo, plateMat);
-    const plateEdges = new THREE.LineSegments(
-        new THREE.EdgesGeometry(plateGeo),
-        new THREE.LineBasicMaterial({ color: 0x64748b, transparent: true, opacity: 0.28 })
+    const blockMesh = new THREE.Mesh(initPart.geo, blockMat);
+    blockMesh.name = 'workpieceBody';
+
+    const blockEdgeMat = new THREE.LineBasicMaterial({ color: 0xcbd5e1, transparent: true, opacity: 0.55 });
+    const blockEdges = new THREE.LineSegments(new THREE.EdgesGeometry(initPart.geo, 22), blockEdgeMat);
+    blockEdges.name = 'workpieceEdges';
+    blockMesh.add(blockEdges);
+    gdtPartGroup.add(blockMesh);
+
+    // Machined inner bore wall (highlights the actual drilled hole surface)
+    const boreWallGeo = new THREE.CylinderGeometry(initPart.safeR, initPart.safeR, GDT_HEIGHT, 48, 1, true);
+    const boreWallMat = new THREE.MeshStandardMaterial({
+        color: 0xe2e8f0,
+        transparent: true,
+        opacity: 0.55,
+        roughness: 0.2,
+        metalness: 0.75,
+        side: THREE.DoubleSide,
+        depthWrite: false
+    });
+    const boreWallMesh = new THREE.Mesh(boreWallGeo, boreWallMat);
+    boreWallMesh.name = 'boreWall';
+    boreWallMesh.position.set(0, GDT_HEIGHT / 2, 0);
+    gdtPartGroup.add(boreWallMesh);
+
+    // Top & bottom chamfer rings on the drilled hole
+    const boreRingGeo = new THREE.RingGeometry(initPart.safeR * 0.98, initPart.safeR * 1.07, 48);
+    const boreRingMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, transparent: true, opacity: 0.75 });
+    const topBoreRing = new THREE.Mesh(boreRingGeo, boreRingMat);
+    topBoreRing.name = 'topBoreRing';
+    topBoreRing.rotation.x = -Math.PI / 2;
+    topBoreRing.position.set(0, GDT_HEIGHT + 0.065, 0);
+    gdtPartGroup.add(topBoreRing);
+
+    const botBoreRing = new THREE.Mesh(boreRingGeo.clone(), boreRingMat);
+    botBoreRing.name = 'botBoreRing';
+    botBoreRing.rotation.x = -Math.PI / 2;
+    botBoreRing.position.set(0, 0.01, 0);
+    gdtPartGroup.add(botBoreRing);
+
+    // Datum Reference Rails (Datum A base plate + Datum B/C reference stops)
+    const datumRailMat = new THREE.MeshStandardMaterial({ color: 0x0ea5e9, roughness: 0.35, metalness: 0.4, transparent: true, opacity: 0.85 });
+    const railB = new THREE.Mesh(new THREE.BoxGeometry(blockSize, 0.22, 0.22), datumRailMat);
+    railB.position.set(0, 0.11, blockSize / 2 + 0.12);
+    gdtPartGroup.add(railB);
+    gdtPartGroup.add(createAxisLabel('[Datum B]', 0, 0.55, blockSize / 2 + 0.35, '#38bdf8', 1.5, 0.45));
+
+    const datumRailCMat = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.35, metalness: 0.4, transparent: true, opacity: 0.85 });
+    const railC = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, blockSize), datumRailCMat);
+    railC.position.set(-blockSize / 2 - 0.12, 0.11, 0);
+    gdtPartGroup.add(railC);
+    gdtPartGroup.add(createAxisLabel('[Datum C]', -blockSize / 2 - 0.45, 0.55, 0, '#34d399', 1.5, 0.45));
+    gdtPartGroup.add(createAxisLabel('[Datum A (底面)]', blockSize / 2 - 1.1, 0.35, -blockSize / 2 - 0.35, '#94a3b8', 1.8, 0.45));
+
+    // Nominal TED Center Crosshair Line (Ideal hole axis in cyan dashed style)
+    const tedAxisPts = [new THREE.Vector3(0, -0.4, 0), new THREE.Vector3(0, GDT_HEIGHT + 0.9, 0)];
+    const tedAxisMat = new THREE.LineBasicMaterial({ color: 0x06b6d4, transparent: true, opacity: 0.85 });
+    const tedAxisLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(tedAxisPts), tedAxisMat);
+    gdtPartGroup.add(tedAxisLine);
+    gdtPartGroup.add(createAxisLabel('TED (理想中心)', 0, GDT_HEIGHT + 1.45, 0, '#06b6d4', 1.6, 0.42));
+
+    // Mating Bolt / Gage Pin at True Position (TED) — visualizes why MMC bonus tolerance allows assembly!
+    const matingPinGroup = new THREE.Group();
+    matingPinGroup.name = 'matingPinGroup';
+    const boltShaftMat = new THREE.MeshStandardMaterial({
+        color: 0xd97706,
+        transparent: true,
+        opacity: 0.38,
+        roughness: 0.25,
+        metalness: 0.75,
+        depthWrite: false
+    });
+    const boltShaft = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.15, GDT_HEIGHT + 0.6, 48), boltShaftMat);
+    boltShaft.name = 'boltShaft';
+    boltShaft.position.set(0, GDT_HEIGHT / 2 + 0.1, 0);
+    matingPinGroup.add(boltShaft);
+
+    // Hex Bolt Head on top of the mating shaft
+    const boltHeadMat = new THREE.MeshStandardMaterial({
+        color: 0xf59e0b,
+        transparent: true,
+        opacity: 0.55,
+        roughness: 0.3,
+        metalness: 0.65,
+        depthWrite: false
+    });
+    const boltHead = new THREE.Mesh(new THREE.CylinderGeometry(1.45, 1.45, 0.55, 6), boltHeadMat);
+    boltHead.name = 'boltHead';
+    boltHead.position.set(0, GDT_HEIGHT + 0.65, 0);
+    const boltHeadEdges = new THREE.LineSegments(
+        new THREE.EdgesGeometry(boltHead.geometry),
+        new THREE.LineBasicMaterial({ color: 0xfde68a, transparent: true, opacity: 0.75 })
     );
-    plateMesh.add(plateEdges);
-    gdtPartGroup.add(plateMesh);
-    gdtPartGroup.position.y = GDT_HEIGHT / 2;
+    boltHead.add(boltHeadEdges);
+    matingPinGroup.add(boltHead);
+    gdtPartGroup.add(matingPinGroup);
+
     gdtScene.add(gdtPartGroup);
 
     const materialEnv = new THREE.MeshStandardMaterial({
@@ -1004,7 +1276,62 @@ function updateGdt3DState(dx, dy, baseTol, totalTol, isPassPos, isPassBox) {
     gdtBox.position.set(tedPx, GDT_HEIGHT / 2, tedPz);
 
     if (gdtPartGroup) {
-        gdtPartGroup.position.set(tedPx, GDT_HEIGHT / 2, tedPz);
+        gdtPartGroup.position.set(tedPx, 0, tedPz);
+
+        // Compute visual hole & mating bolt radii so physical clearance is 100% consistent with tolerance S
+        const mmcHole = parseFloat(document.getElementById('gdt-lmc-limit')?.value) || 10.0;
+        const actHole = parseFloat(document.getElementById('gdt-actual-hole')?.value) || 10.15;
+        const vcPinDia = Math.max(0.1, mmcHole - baseTol);
+        const radialDev = Math.sqrt(dx * dx + dy * dy);
+        const minWallClearance = (actHole - vcPinDia) / 2 - radialDev;
+        const isMatingOk = minWallClearance >= -1e-6 && actHole >= mmcHole;
+
+        const pinVisR = 1.15; // Fixed visual radius for the Virtual Condition mating bolt at TED
+        const holeVisR = Math.min(2.45, Math.max(0.55, pinVisR + ((actHole - vcPinDia) / 2) * S));
+        const relHoleX = dx * S;
+        const relHoleZ = -dy * S;
+
+        const blockSize = 7.4;
+        const updatedPart = createWorkpieceWithHoleGeometry(blockSize, GDT_HEIGHT, relHoleX, relHoleZ, holeVisR);
+
+        const bodyMesh = gdtPartGroup.getObjectByName('workpieceBody');
+        if (bodyMesh) {
+            bodyMesh.geometry.dispose();
+            bodyMesh.geometry = updatedPart.geo;
+            const edgesObj = bodyMesh.getObjectByName('workpieceEdges');
+            if (edgesObj) {
+                edgesObj.geometry.dispose();
+                edgesObj.geometry = new THREE.EdgesGeometry(updatedPart.geo, 22);
+            }
+        }
+
+        const boreWall = gdtPartGroup.getObjectByName('boreWall');
+        if (boreWall) {
+            boreWall.geometry.dispose();
+            boreWall.geometry = new THREE.CylinderGeometry(updatedPart.safeR, updatedPart.safeR, GDT_HEIGHT, 48, 1, true);
+            boreWall.position.set(updatedPart.clampedX, GDT_HEIGHT / 2, updatedPart.clampedZ);
+            boreWall.material.color.setHex(isMatingOk ? 0xe2e8f0 : 0xfda4af);
+        }
+
+        const topRing = gdtPartGroup.getObjectByName('topBoreRing');
+        const botRing = gdtPartGroup.getObjectByName('botBoreRing');
+        if (topRing && botRing) {
+            topRing.geometry.dispose();
+            botRing.geometry.dispose();
+            const newRingGeo = new THREE.RingGeometry(updatedPart.safeR * 0.98, updatedPart.safeR * 1.07, 48);
+            topRing.geometry = newRingGeo;
+            botRing.geometry = newRingGeo.clone();
+            topRing.position.set(updatedPart.clampedX, GDT_HEIGHT + 0.065, updatedPart.clampedZ);
+            botRing.position.set(updatedPart.clampedX, 0.01, updatedPart.clampedZ);
+            topRing.material.color.setHex(isMatingOk ? 0x38bdf8 : 0xf43f5e);
+        }
+
+        const boltShaft = gdtPartGroup.getObjectByName('boltShaft');
+        const boltHead = gdtPartGroup.getObjectByName('boltHead');
+        if (boltShaft && boltHead) {
+            boltShaft.material.color.setHex(isMatingOk ? 0xd97706 : 0xe11d48);
+            boltHead.material.color.setHex(isMatingOk ? 0xf59e0b : 0xf43f5e);
+        }
     }
     
     // Actual measurement in absolute position
