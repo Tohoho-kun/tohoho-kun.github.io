@@ -523,17 +523,17 @@
                     </div>
 
                     <!-- Data Table (10x3x3) -->
-                    <div class="data-panel panel compact mt-3">
-                        <div class="flex-header compact-header">
+                    <div class="data-panel panel compact">
+                        <div class="flex-header compact-header" style="flex-wrap:wrap; gap:8px;">
                             <h3><i class="fa-solid fa-table"></i> <span data-i18n="data_label">測定データ (10部品 × 3作業者 × 3回)</span></h3>
-                            <div class="table-actions" style="display:flex; gap:6px;">
+                            <div class="table-actions" style="display:flex; gap:6px; flex-wrap:wrap;">
                                 <button id="btn-grr-paste" class="btn small secondary" title="Excelから表データを貼付"><i class="fa-solid fa-paste"></i> <span data-i18n="btn_paste">Excel貼付</span></button>
                                 <button id="btn-grr-copy" class="btn small secondary" title="Excelコピー (標準)"><i class="fa-regular fa-copy"></i> <span data-i18n="btn_copy">コピー</span></button>
                                 <button id="btn-grr-copy-t" class="btn small secondary" title="縦横入替コピー"><i class="fa-solid fa-retweet"></i> 縦横入替</button>
                                 <button id="btn-grr-clear" class="btn small secondary" title="クリア"><i class="fa-solid fa-eraser"></i> <span data-i18n="btn_clear">クリア</span></button>
                             </div>
                         </div>
-                        <div class="table-container tight grr-table-wrapper" style="max-height:300px; overflow-y:auto;">
+                        <div class="table-container tight grr-table-wrapper" style="max-height:340px; overflow:auto;">
                             <table class="data-table excel-style" id="grr-table">
                                 <thead>
                                     <tr>
@@ -557,7 +557,7 @@
                     </div>
 
                     <!-- Formula Reference Accordion -->
-                    <div class="panel mt-3 grr-formula-panel" style="font-size:0.8rem; background:rgba(0,0,0,0.1); border-left:3px solid var(--primary-color);">
+                    <div class="panel grr-formula-panel" style="font-size:0.8rem; background:rgba(0,0,0,0.1); border-left:3px solid var(--primary-color);">
                         <div style="font-weight:600; color:var(--text-color); margin-bottom:6px;"><i class="fa-solid fa-square-root-variable"></i> <span data-i18n="formula_title">計算式の定義 (ANOVA法 & AIAG MSA第4版準拠)</span></div>
                         <div class="grr-formula-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:6px; font-family:var(--font-mono);">
                             <div>%GR&amp;R = 100 × (σ_GRR / σ_Total)</div>
